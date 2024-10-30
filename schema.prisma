@@ -1,0 +1,20 @@
+model Client {
+  id                String    @id @default(uuid())
+  name              String
+  cpf               String    @unique
+  email             String    @unique
+  password          String
+  client_avatar     Int
+  nickname          String
+  phone             String    // Adicione este campo
+  address           String
+  client_url_profile String?  @default(null)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  credit_cards      CreditCard[]
+  subscribed_auct   Auct[]
+  Bid               Bid[]
+  Product           Product[]
+  Cartela           Cartela[]
+  Advertiser        Advertiser[]
+}
