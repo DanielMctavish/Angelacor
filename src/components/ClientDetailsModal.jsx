@@ -101,7 +101,7 @@ function ClientDetailsModal({ client, onClose }) {
     setNewContractLine(!newContractLine)
   }
 
-  const handleDeleteForever = ({contract}) => {
+  const handleDeleteForever = ({ contract }) => {
     client.contract.find(c)
   }
 
@@ -120,23 +120,23 @@ function ClientDetailsModal({ client, onClose }) {
           <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-[#333333] bebas-neue-regular">
             Detalhes do Cliente
           </h2>
-          
+
           <ClientInformations client={client} />
 
           <div className='flex w-full justify-between items-center mt-6'>
             <h3 className="text-xl md:text-2xl font-bold text-[#333333] bebas-neue-regular">Contratos</h3>
-            <span onClick={handleCreateNewContractLine} 
+            <span onClick={handleCreateNewContractLine}
               className='text-[#1a911e] cursor-pointer hover:text-[#2dab32]'>
               <AddCircle />
             </span>
           </div>
 
           {newContractLine && (
-            <NewContractLine 
-              client={client} 
+            <NewContractLine
+              client={client}
               setChangeFees={setChangeFees}
-              setNewContractLine={setNewContractLine} 
-              newContractLine={newContractLine} 
+              setNewContractLine={setNewContractLine}
+              newContractLine={newContractLine}
             />
           )}
 
@@ -146,8 +146,9 @@ function ClientDetailsModal({ client, onClose }) {
               <thead className="bg-[#e67f00] text-white">
                 <tr>
                   <th className="py-2 px-3 text-left text-sm">Banco</th>
-                  <th className="py-2 px-3 text-left text-sm">Parcelas</th>
-                  <th className="py-2 px-3 text-left text-sm">Valor</th>
+                  <th className="py-2 px-3 text-left text-sm">Prazos</th>
+                  <th className="py-2 px-3 text-left text-sm">Parcela</th>
+                  <th className="py-2 px-3 text-left text-sm">Saldo Devedor</th>
                   <th className="py-2 px-3 text-left text-sm">Juros</th>
                   <th className="py-2 px-3 text-left text-sm">Ação</th>
                 </tr>
@@ -164,33 +165,36 @@ function ClientDetailsModal({ client, onClose }) {
                       <td className="py-2 px-3 text-sm">{contract.bank}</td>
                       <td className="py-2 px-3 text-sm">
                         <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-start md:items-center">
-                          <input 
-                            type="text" 
-                            placeholder={`${contract.installments_paid}`} 
+                          <input
+                            type="text"
+                            placeholder={`${contract.installments_paid}`}
                             className='w-16 text-center p-1 border rounded'
-                            onChange={(e) => contract.installments_paid = parseFloat(e.target.value)} 
+                            onChange={(e) => contract.installments_paid = parseFloat(e.target.value)}
                           />
                           <span>de</span>
-                          <input 
-                            type="text" 
-                            placeholder={`${contract.installments}`} 
+                          <input
+                            type="text"
+                            placeholder={`${contract.installments}`}
                             className='w-16 text-center p-1 border rounded'
-                            onChange={(e) => contract.installments = parseFloat(e.target.value)} 
+                            onChange={(e) => contract.installments = parseFloat(e.target.value)}
                           />
                         </div>
+                      </td>
+                      <td className="py-2 px-3 text-sm">
+                        R${contract.value_installment.toFixed(2)}
                       </td>
                       <td className="py-2 px-3 text-sm">
                         R$ {calcularSaldoDevedorVP(contract.value_installment, contract.fees_percentage, contract.installments - contract.installments_paid).toFixed(2)}
                       </td>
                       <td className="py-2 px-3 text-sm">
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           className='w-20 p-1 border rounded'
                           placeholder='taxa'
                           onChange={(e) => {
                             setChangeFees(Math.random(e.target.value, 12))
                             contract.fees_percentage = parseFloat(e.target.value / 100)
-                          }} 
+                          }}
                         />
                       </td>
                       <td className="py-2 px-3 text-sm">
