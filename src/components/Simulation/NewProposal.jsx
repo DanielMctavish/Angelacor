@@ -4,8 +4,8 @@ function NewProposal({ contract, setListaNovasParcelas, setNovoValorTotalJuros }
     const [newJuros, setNewJuros] = useState(0);
     const [numParcelas, setNumParcelas] = useState(0);
     const [valorParcela, setValorParcela] = useState(0);
-    const [valorParcelaMensal, setValorParcelaMensal] = useState(0);
 
+    const [valorParcelaMensal, setValorParcelaMensal] = useState(0);
     const [novoValorCliente, setNovoValorCliente] = useState(0);
     const [valorRestante, setValorRestante] = useState(0);
     const [valorTotalJuros, setValorTotalJuros] = useState(0);
@@ -53,6 +53,7 @@ function NewProposal({ contract, setListaNovasParcelas, setNovoValorTotalJuros }
 
         let listaParcelas = Array(numParcelas).fill(valorParcela);
         listaParcelas[0] = valorParcela * (1 + newJuros);
+        
         for (let i = 1; i < numParcelas; i++) {
             listaParcelas[i] = listaParcelas[i - 1] * (1 + newJuros);
         }

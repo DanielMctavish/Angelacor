@@ -16,7 +16,7 @@ function SimulationModal({ contract, setCurrentContract }) {
   }, [])
 
   const calculateCurrentContract = () => {
-    const valorBase = contract.value / contract.installments;
+    const valorBase = contract.value_installment / contract.installments;
     let listaParcelas = [valorBase];
     
     for (let i = 0; i < contract.installments; i++) {
@@ -53,7 +53,7 @@ function SimulationModal({ contract, setCurrentContract }) {
           </div>
           <div className="p-3 bg-gray-50 rounded-md">
             <p className="text-sm text-gray-600">Valor Inicial</p>
-            <p className="font-semibold">R$ {contract.value.toFixed(2)}</p>
+            <p className="font-semibold">R$ {contract.value_installment.toFixed(2)}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-md">
             <p className="text-sm text-gray-600">Valor Total com Juros</p>

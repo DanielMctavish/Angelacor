@@ -11,12 +11,10 @@ function SimulatorMain() {
   const [selectedClient, setSelectedClient] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  // Função para calcular o valor total em empréstimos do cliente
   const calculateTotalLoans = (client) => {
     return client.contracts.reduce((total, contract) => total + contract.value, 0);
   };
 
-  // Função para calcular o número de estrelas (1 a 5)
   const calculateStars = (totalLoans) => {
     if (totalLoans >= 500000) return 5;
     if (totalLoans >= 400000) return 4;
