@@ -180,7 +180,7 @@ function ClientDetailsModal({ client, onClose }) {
                         </div>
                       </td>
                       <td className="py-2 px-3 text-sm">
-                        R$ {contract.value_installment.toFixed(2)}
+                        R$ {calcularSaldoDevedorVP(contract.value_installment, contract.fees_percentage, contract.installments - contract.installments_paid).toFixed(2)}
                       </td>
                       <td className="py-2 px-3 text-sm">
                         <input 
