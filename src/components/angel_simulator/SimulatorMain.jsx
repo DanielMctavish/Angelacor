@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { clientModel } from '../tempData/maindata';
+import { clientModel } from '../../tempData/maindata';
 import PersonIcon from '@mui/icons-material/Person';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
