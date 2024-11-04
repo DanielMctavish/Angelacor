@@ -1,10 +1,67 @@
 import { ArrowForward } from '@mui/icons-material';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import angela from "../../../medias/angela.png"
+import banner01 from "../../../medias/covers_banner/banner_01.jpeg"
+import banner02 from "../../../medias/covers_banner/banner_02.jpeg"
+import banner03 from "../../../medias/covers_banner/banner_03.jpeg"
+import banner04 from "../../../medias/covers_banner/banner_04.jpeg"
+import banner05 from "../../../medias/covers_banner/banner_05.jpeg"
+import banner06 from "../../../medias/covers_banner/banner_06.jpeg"
+import banner07 from "../../../medias/covers_banner/banner_07.jpeg"
 
 function HeroSection() {
+    const banners = [
+        { id: 1, image: banner01, alt: "Banner 1" },
+        { id: 2, image: banner02, alt: "Banner 2" },
+        { id: 3, image: banner03, alt: "Banner 3" },
+        { id: 4, image: banner04, alt: "Banner 4" },
+        { id: 5, image: banner05, alt: "Banner 5" },
+        { id: 6, image: banner06, alt: "Banner 6" },
+        { id: 7, image: banner07, alt: "Banner 7" },
+    ];
+
     return (
-        <section className="w-full min-h-[calc(100vh-100px)] flex justify-center bg-[#f1f1f1] relative overflow-hidden py-8 md:py-0">
-            <div className="w-full max-w-[1200px] flex flex-col md:flex-row justify-center items-center gap-8 px-4">
+        <section className="w-full min-h-[120vh] flex flex-col justify-start bg-[#f1f1f1] relative overflow-hidden">
+            <div className='w-full h-[300px] md:h-[600px] flex justify-center items-center bg-zinc-100'>
+                <Swiper
+                    style={{
+                        '--swiper-navigation-color': '#fff',
+                        '--swiper-pagination-color': '#fff',
+                    }}
+                    modules={[Navigation, Pagination, Autoplay]}
+                    spaceBetween={0}
+                    slidesPerView={1}
+                    speed={800}
+                    navigation={{
+                        enabled: true,
+                        hideOnMobile: true
+                    }}
+                    pagination={{ 
+                        clickable: true,
+                        dynamicBullets: true
+                    }}
+                    autoplay={{
+                        delay: 6000,
+                        disableOnInteraction: false,
+                    }}
+                    loop={true}
+                    className="w-full h-full"
+                >
+                    {banners.map((banner) => (
+                        <SwiperSlide key={banner.id}>
+                            <div className='flex w-full h-[300px] md:h-[600px] justify-center bg-zinc-100'>
+                                <img 
+                                    src={banner.image} 
+                                    alt={banner.alt}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        </SwiperSlide>
+                    ))}
+                </Swiper>
+            </div>
+            <div className="w-full max-w-[1200px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8 px-4 py-12">
                 <div className="flex flex-col items-center md:items-start gap-6 md:gap-8 md:w-1/2 z-10">
                     <div className="flex flex-col gap-4 text-center md:text-left">
                         <span className="text-[#e67f00] font-semibold text-lg md:text-xl">Crédito Inteligente</span>

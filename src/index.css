@@ -1,3 +1,7 @@
+@import 'swiper/css';
+@import 'swiper/css/pagination';
+@import 'swiper/css/navigation';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,4 +15,64 @@ body {
 
 #root {
   min-height: 100vh;
+}
+
+/* Customização do Swiper */
+.swiper {
+    width: 100%;
+    height: 100%;
+}
+
+.swiper-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Ajustes para mobile */
+@media (max-width: 768px) {
+    .swiper-button-next,
+    .swiper-button-prev {
+        display: none !important; /* Esconde botões em mobile */
+    }
+
+    .swiper-pagination {
+        bottom: 10px !important; /* Ajusta posição dos bullets */
+    }
+
+    .swiper-pagination-bullet {
+        width: 8px !important;
+        height: 8px !important;
+    }
+}
+
+/* Estilos para desktop */
+@media (min-width: 769px) {
+    .swiper-button-next,
+    .swiper-button-prev {
+        width: 40px !important;
+        height: 40px !important;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        color: white !important;
+    }
+
+    .swiper-button-next:after,
+    .swiper-button-prev:after {
+        font-size: 20px !important;
+    }
+}
+
+.swiper-pagination-bullet {
+    width: 10px !important;
+    height: 10px !important;
+    background: white !important;
+    opacity: 0.5;
+}
+
+.swiper-pagination-bullet-active {
+    opacity: 1;
+    background: white !important;
 }
