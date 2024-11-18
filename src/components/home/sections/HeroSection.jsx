@@ -1,7 +1,7 @@
 import { ArrowForward } from '@mui/icons-material';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import angela from "../../../medias/angela.png"
+// import angela from "../../../medias/angela.png"
 import banner01 from "../../../medias/covers_banner/banner_01.jpeg"
 import banner02 from "../../../medias/covers_banner/banner_02.jpeg"
 import banner03 from "../../../medias/covers_banner/banner_03.jpeg"
@@ -23,7 +23,7 @@ function HeroSection() {
 
     return (
         <section className="w-full min-h-[120vh] flex flex-col justify-start bg-[#f1f1f1] relative overflow-hidden">
-            <div className='w-full h-[300px] md:h-[600px] flex justify-center items-center bg-zinc-100'>
+            <div className='w-full h-[300px] md:h-[600px] flex justify-center items-center bg-zinc-100 px-0'>
                 <Swiper
                     style={{
                         '--swiper-navigation-color': '#fff',
@@ -37,7 +37,7 @@ function HeroSection() {
                         enabled: true,
                         hideOnMobile: true
                     }}
-                    pagination={{ 
+                    pagination={{
                         clickable: true,
                         dynamicBullets: true
                     }}
@@ -51,8 +51,8 @@ function HeroSection() {
                     {banners.map((banner) => (
                         <SwiperSlide key={banner.id}>
                             <div className='flex w-full h-[300px] md:h-[600px] justify-center bg-zinc-100'>
-                                <img 
-                                    src={banner.image} 
+                                <img
+                                    src={banner.image}
                                     alt={banner.alt}
                                     className="w-full h-full object-cover"
                                 />
@@ -72,14 +72,14 @@ function HeroSection() {
                     </div>
 
                     <div className="md:hidden relative w-full h-[300px] my-4">
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
+                        <div className="absolute left-1/2 top-[60%] -translate-x-1/2 -translate-y-1/2 
                             w-[300px] h-[300px] rounded-full bg-[#133785] z-0"></div>
-                        <img
-                            src={angela}
-                            alt="Angela consultora"
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
-                                h-[350px] object-contain z-10"
-                        />
+                        <div className="absolute right-[-30%] top-[-20%] 
+                            w-[200px] h-[200px] rounded-full bg-[#133785]/60 z-0"></div>
+                        <div className="absolute left-[-25%] bottom-[-20%] 
+                            w-[150px] h-[150px] rounded-full bg-[#133785]/40 z-0"></div>
+                        <div className="absolute left-[-15%] top-[10%] 
+                            w-[100px] h-[100px] rounded-full bg-[#133785]/30 z-0"></div>
                     </div>
 
                     <div className="flex flex-col gap-4 max-w-[500px] px-4 md:px-0">
@@ -113,16 +113,17 @@ function HeroSection() {
                 </div>
 
                 <div className="hidden md:block md:w-1/2 relative h-full">
-                    <div className="absolute right-[4vh] top-[18%] 
-                        min-w-[400px] h-[400px] rounded-full z-0 bg-[#133785]"></div>
-                    <div className="absolute right-[4vh] top-[38%] 
+                    <div className="absolute right-[-12vh] top-[-12vh] 
+                        min-w-[200px] h-[200px] rounded-full z-0 bg-[#2054c4]"></div>
+                    <div className="absolute right-[-12vh] top-[5vh] 
+                        min-w-[400px] h-[400px] rounded-full z-0 bg-[#113177]"></div>
+                    <div className="absolute right-[8vh] top-[38%] 
                         min-w-[600px] h-[600px] rounded-full z-0 bg-[#133785]"></div>
-
-                    <img
-                        src={angela}
-                        alt="Angela consultora"
-                        className="absolute right-0 top-[70%] translate-y-[-50%] h-[90vh] object-contain z-10"
-                    />
+                    
+                    <div className="absolute left-[-90vh] top-[20vh] 
+                        min-w-[300px] h-[300px] rounded-full z-0 bg-[#133785]/60"></div>
+                    <div className="absolute left-[-4vh] top-[-32vh] opacity-40
+                        min-w-[200px] h-[200px] rounded-full z-0 bg-[#133785]/40"></div>
                 </div>
             </div>
         </section>
