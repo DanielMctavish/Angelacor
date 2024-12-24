@@ -48,7 +48,8 @@ function AdminNavbar({ logo, area }) {
         <nav className="w-full bg-white/10 backdrop-blur-sm border-b border-white/10 px-4 py-3">
             <div className="w-full max-w-[1200px] mx-auto flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center">
                 <div className='flex justify-center md:justify-start items-center gap-2 w-full md:w-auto'>
-                    <img src={logo} alt="Logo Angelacor" className="w-[50px] md:w-[60px] object-cover" />
+                    <img onClick={() => navigate('/plataforma')} src={logo} alt="Logo Angelacor" 
+                    className="w-[50px] md:w-[60px] object-cover cursor-pointer" />
                     <span className="text-[16px] md:text-[18px] font-semibold">{area}</span>
                 </div>
 

@@ -2,12 +2,14 @@ import axios from 'axios';
 import { Lock } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function AdminLogin() {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loginSuccess, setLoginSuccess] = useState(false);
 
     const navigate = useNavigate();
 
@@ -28,8 +30,12 @@ function AdminLogin() {
             });
 
             if (response.data) {
+                setLoginSuccess(true);
                 localStorage.setItem("adminToken", JSON.stringify(response.data));
-                navigate("/plataforma");
+                
+                setTimeout(() => {
+                    navigate("/plataforma");
+                }, 1000);
             }
 
         } catch (error) {
@@ -57,7 +63,34 @@ function AdminLogin() {
 
     return (
         <div className="w-full h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] text-white 
-            flex flex-col justify-center items-center px-4">
+            flex items-center justify-center relative overflow-hidden">
+            
+            <AnimatePresence>
+                {loginSuccess ? (
+                    <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 1.5, opacity: 0 }}
+                        className="absolute inset-0 bg-[#133785]/90 backdrop-blur-sm flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ y: 20 }}
+                            animate={{ y: 0 }}
+                            className="text-center"
+                        >
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 0.5 }}
+                                className="text-6xl mb-4"
+                            >
+                                ✨
+                            </motion.div>
+                            <h2 className="text-2xl font-bold mb-2">Bem-vindo!</h2>
+                            <p className="text-gray-200">Login realizado com sucesso</p>
+                        </motion.div>
+                    </motion.div>
+                ) : null}
+            </AnimatePresence>
 
             <section className="w-full max-w-[400px] flex flex-col items-center 
                 bg-white/10 backdrop-blur-sm rounded-2xl p-8 gap-6 
