@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Lock } from '@mui/icons-material';
+import { Lock, ArrowBack } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -94,7 +94,17 @@ function AdminLogin() {
 
             <section className="w-full max-w-[400px] flex flex-col items-center 
                 bg-white/10 backdrop-blur-sm rounded-2xl p-8 gap-6 
-                shadow-lg border border-white/20">
+                shadow-lg border border-white/20 relative">
+
+                {/* Botão Voltar */}
+                <button
+                    onClick={() => navigate('/login')}
+                    className="absolute left-4 top-4 text-gray-400 hover:text-white flex items-center gap-1 
+                        transition-colors text-sm group"
+                >
+                    <ArrowBack className="text-base group-hover:-translate-x-1 transition-transform" />
+                    <span>Voltar</span>
+                </button>
 
                 <div className="flex flex-col items-center gap-2">
                     <div className="w-16 h-16 rounded-full bg-[#e67f00] 

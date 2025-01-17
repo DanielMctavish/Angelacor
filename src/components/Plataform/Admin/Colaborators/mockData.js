@@ -16,7 +16,7 @@ export const mockColaborators = [
         role: 'Vendedor',
         status: 'Ativo',
         level: 7,
-        proposalsCount: 9,
+        proposalsCount: 900,
         avatar: 'https://i.pravatar.cc/300?img=47'
     },
     {

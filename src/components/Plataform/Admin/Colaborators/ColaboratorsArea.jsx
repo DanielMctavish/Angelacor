@@ -6,13 +6,21 @@ import logoAngelCor from "../../../../../public/angelcor_logo.png";
 import RankingSection from './RankingSection';
 import { mockColaborators } from './mockData';
 import ColaboratorsList from './ColaboratorsList';
+import CreateColaboratorModal from './CreateColaboratorModal';
 
 function ColaboratorsArea() {
     const [colaborators, setColaborators] = useState(mockColaborators);
     const [topColaborators] = useState([...mockColaborators].sort((a, b) => b.proposalsCount - a.proposalsCount));
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
         <div className="w-full min-h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] text-white">
+            {/* Modal */}
+            <CreateColaboratorModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+            />
+
             {/* Navbar com animação de cima para baixo */}
             <motion.div
                 initial={{ y: -100, opacity: 0 }}
@@ -31,6 +39,7 @@ function ColaboratorsArea() {
                     className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"
                 >
                     <button
+                        onClick={() => setIsModalOpen(true)}
                         className="w-full md:w-auto flex items-center justify-center gap-2 
                         bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
                         rounded-lg transition-all text-base"
