@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { AdminPanelSettings, Groups } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import logoAngelCor from "../../../public/angelcor_logo.png";
+import logoAngelCor from "../../medias/logos/angelcor_logo.png";
 
 function LoginSelector() {
     const navigate = useNavigate();

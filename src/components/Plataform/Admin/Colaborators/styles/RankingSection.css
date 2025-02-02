@@ -11,13 +11,28 @@
     background: radial-gradient(circle, rgba(255,215,0,0.9) 0%, rgba(255,107,0,0) 70%);
     border-radius: 50%;
     bottom: 0;
-    animation: rise var(--duration, 3s) ease-in infinite;
-    left: var(--position);
+    filter: blur(2px);
+    box-shadow: 0 0 8px #ffd700;
+    animation: riseAndFade 3s infinite;
     opacity: 0;
-    filter: blur(0.5px);
 }
 
-@keyframes rise {
+/* Variações de partículas */
+.particle:nth-child(3n) {
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(circle, rgba(255,215,0,0.9) 0%, rgba(255,107,0,0) 70%);
+    box-shadow: 0 0 10px #ffd700;
+}
+
+.particle:nth-child(2n) {
+    width: 7px;
+    height: 7px;
+    background: radial-gradient(circle, rgba(255,140,0,0.9) 0%, rgba(255,77,0,0) 70%);
+    box-shadow: 0 0 12px #ff4d00;
+}
+
+@keyframes riseAndFade {
     0% {
         transform: translateY(100%) scale(1);
         opacity: 0;
@@ -27,37 +42,23 @@
     }
     50% {
         opacity: 1;
+        filter: blur(3px);
     }
     80% {
         opacity: 0.8;
     }
     100% {
-        transform: translateY(-100vh) scale(0);
+        transform: translateX(-400vh) translateX(calc(var(--wind) * 30px)) scale(0);
         opacity: 0;
     }
 }
 
-/* Diferentes tamanhos e velocidades para cada partícula */
-.particle-1 { --duration: 3s; width: 5px; height: 5px; }
-.particle-2 { --duration: 2.5s; width: 6px; height: 6px; }
-.particle-3 { --duration: 3.5s; width: 4px; height: 4px; }
-.particle-4 { --duration: 4s; width: 7px; height: 7px; }
-.particle-5 { --duration: 3.2s; width: 3px; height: 3px; }
-.particle-6 { --duration: 2.8s; width: 4px; height: 4px; }
-.particle-7 { --duration: 3.7s; width: 3px; height: 3px; }
-.particle-8 { --duration: 3.3s; width: 2px; height: 2px; }
-.particle-9 { --duration: 2.9s; width: 4px; height: 4px; }
-.particle-10 { --duration: 3.6s; width: 3px; height: 3px; }
-.particle-11 { --duration: 3.1s; width: 5px; height: 5px; }
-.particle-12 { --duration: 2.7s; width: 3px; height: 3px; }
-.particle-13 { --duration: 3.4s; width: 4px; height: 4px; }
-.particle-14 { --duration: 3.8s; width: 2px; height: 2px; }
-.particle-15 { --duration: 3s; width: 3px; height: 3px; }
-.particle-16 { --duration: 2.6s; width: 4px; height: 4px; }
-.particle-17 { --duration: 3.9s; width: 3px; height: 3px; }
-.particle-18 { --duration: 3.2s; width: 5px; height: 5px; }
-.particle-19 { --duration: 2.8s; width: 2px; height: 2px; }
-.particle-20 { --duration: 3.5s; width: 4px; height: 4px; }
+/* Gera partículas com posições e movimentos aleatórios */
+.particle {
+    left: var(--position);
+    animation-delay: var(--delay);
+    animation-duration: var(--duration);
+}
 
 /* Adicionar um leve brilho ao redor das partículas */
 .particle::after {
@@ -67,7 +68,7 @@
     background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,107,0,0) 120%);
     border-radius: 50%;
     filter: blur(1px);
-} 
+}
 
 /* Efeitos para o primeiro lugar */
 .first-place {
@@ -89,11 +90,6 @@
     animation: glow 3s ease-in-out infinite;
     z-index: -1;
     filter: blur(18px);
-}
-
-.first-place img {
-    transform-style: preserve-3d;
-    transition: all 0.3s ease;
 }
 
 @keyframes glowAndRotate {
@@ -126,8 +122,7 @@
     }
 }
 
-/* Ajuste do brilho da medalha do primeiro lugar */
-.first-place .trophy-icon {
+.trophy-icon {
     animation: trophyGlow 2s ease-in-out infinite;
     filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
 }
@@ -142,4 +137,4 @@
     100% {
         filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
     }
-}
+} 

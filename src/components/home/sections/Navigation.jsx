@@ -24,6 +24,9 @@ function Navigation() {
                     <a href="#sobre" className="hover:text-[#5c90ff] transition-colors">Sobre</a>
                     <a href="#servicos" className="hover:text-[#5c90ff] transition-colors">Serviços</a>
                     <a href="#contato" className="hover:text-[#5c90ff] transition-colors">Contato</a>
+                    <button onClick={() => navigate('/dashboard-client')} 
+                    className="text-[#ffffff] bg-[#1dac69] rounded-full p-2
+                    transition-colors">sou cliente</button>
                     <button onClick={() => navigate('/plataforma')} className="text-[#ffffff] bg-[#5c90ff] rounded-full p-2
                     transition-colors">Plataforma</button>
                 </div>

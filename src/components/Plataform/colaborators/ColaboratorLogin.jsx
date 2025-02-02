@@ -1,77 +1,130 @@
-import { Person, Lock, Login as LoginIcon, ArrowBack } from '@mui/icons-material';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import logoAngelCor from "../../../../public/angelcor_logo.png";
+import { Email, Lock } from '@mui/icons-material';
+import axios from 'axios';
+import { toast } from '../../Common/Toast/Toast';
+import logoAngelCor from '../../../medias/logos/angelcor_logo.png';
 
 function ColaboratorLogin() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}/colaborator/login-colaborator`,
+                { email, password }
+            );
+
+            // Salva os dados do colaborador e token no localStorage
+            localStorage.setItem('colaboratorData', JSON.stringify({
+                user: response.data.user,
+                token: response.data.token
+            }));
+
+            toast.success('Login realizado com sucesso!');
+            navigate('/colaborador-dashboard');
+
+        } catch (error) {
+            console.error('Erro no login:', error);
+            toast.error(
+                error.response?.data?.message || 
+                'Erro ao fazer login. Verifique suas credenciais.'
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <div className="w-[100%] h-[100vh] bg-gradient-to-br from-[#133785] via-[#0a1c42] to-[#1a1a1a] flex items-center justify-center p-4 overflow-hidden">
-            {/* Círculos decorativos */}
-            <div className="fixed top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-3xl" />
-            
-            <div className="fixed bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 blur-3xl" />
-
-            {/* Container do Login */}
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 w-full max-w-[400px] border border-white/20 relative z-10">
-                {/* Botão Voltar */}
-                <button
-                    onClick={() => navigate('/login')}
-                    className="absolute left-4 top-4 text-gray-400 hover:text-white flex items-center gap-1 
-                        transition-colors text-sm group"
-                >
-                    <ArrowBack className="text-base group-hover:-translate-x-1 transition-transform" />
-                    <span>Voltar</span>
-                </button>
-
-                {/* Logo */}
-                <div className="flex justify-center mb-8">
-                    <img 
-                        src={logoAngelCor} 
-                        alt="AngelCor Logo" 
-                        className="w-[200px] h-auto"
+        <div className="min-h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-[400px] bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/10"
+            >
+                <div className="flex flex-col items-center mb-8">
+                    <motion.img
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        src={logoAngelCor}
+                        alt="AngelCor Logo"
+                        className="w-32 mb-4"
                     />
+                    <h2 className="text-2xl font-bold text-white">Portal do Colaborador</h2>
+                    <p className="text-gray-400 text-sm">Faça login para acessar sua área</p>
                 </div>
 
-                <h2 className="text-2xl font-bold text-white text-center mb-6">
-                    Portal do Colaborador
-                </h2>
-
-                {/* Formulário */}
-                <form className="space-y-4">
-                    <div className="relative">
-                        <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Seu e-mail"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-10 py-3 text-white placeholder-gray-400 focus:border-[#e67f00] transition-colors"
-                        />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm text-gray-300">Email</label>
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                            <Email className="text-gray-400" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Seu email"
+                                className="bg-transparent outline-none text-white w-full"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="password"
-                            placeholder="Sua senha"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-10 py-3 text-white placeholder-gray-400 focus:border-[#e67f00] transition-colors"
-                        />
+                    <div className="space-y-2">
+                        <label className="text-sm text-gray-300">Senha</label>
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                            <Lock className="text-gray-400" />
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Sua senha"
+                                className="bg-transparent outline-none text-white w-full"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-[#e67f00] to-[#ff8c00] hover:from-[#ff8c00] hover:to-[#e67f00] text-white py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                        disabled={loading}
+                        className={`
+                            w-full bg-[#e67f00] hover:bg-[#ff8c00] text-white py-3 rounded-lg
+                            transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                            flex items-center justify-center gap-2
+                        `}
                     >
-                        <span>Entrar</span>
-                        <LoginIcon />
+                        {loading ? (
+                            <>
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                                />
+                                Entrando...
+                            </>
+                        ) : (
+                            'Entrar'
+                        )}
                     </button>
-
-                    <div className="text-center">
-                        <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">
-                            Esqueceu sua senha?
-                        </a>
-                    </div>
                 </form>
-            </div>
+
+                <p className="text-center text-gray-400 text-sm mt-6">
+                    Problemas para acessar?{' '}
+                    <a href="#" className="text-[#e67f00] hover:underline">
+                        Fale com o suporte
+                    </a>
+                </p>
+            </motion.div>
         </div>
     );
 }

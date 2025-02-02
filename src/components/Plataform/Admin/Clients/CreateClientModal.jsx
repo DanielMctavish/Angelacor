@@ -27,6 +27,7 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
         cpf: '',
         phone: '',
         rg: '',
+        url_profile_cover:"",
         expeditionDate: '',
         fatherName: '',
         motherName: '',

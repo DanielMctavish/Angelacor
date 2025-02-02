@@ -201,14 +201,14 @@ function ClientDetailsModal({ client, onClose }) {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleStartSimulation(contract)}
-                            className="bg-blue-500 text-white px-3 py-1 
+                            className="bg-blue-500 text-white
                             rounded-md hover:bg-blue-600 transition duration-300"
                           >
-                            Simular
+                            Criar Proposta
                           </button>
-                          <button className='text-[#e11414] bg-[#cfcfcf] 
-                          rounded-full p-1 hover:text-[#f84343]'>
-                            <DeleteForever />
+                          <button className='text-[#e11414] bg-[#fcfcfc] 
+                          rounded-full p-1 hover:text-[#f84343] min-w-[40px] min-h-[40px]'>
+                            <DeleteForever sx={{fontSize:'20px'}}/>
                           </button>
                         </div>
                       </td>

@@ -1,22 +1,23 @@
-import { Lock, ArrowBack } from '@mui/icons-material';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { Lock, ArrowBack } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-function AdminLogin() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+
+function ClientLogin() {
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [loginSuccess, setLoginSuccess] = useState(false);
+
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
+    const handleLogin = async () => {
         setError('');
-        
-        if (!email || !password) {
+
+        if (!loginEmail || !loginPassword) {
             setError('Por favor, preencha todos os campos');
             return;
         }
@@ -24,20 +25,17 @@ function AdminLogin() {
         setLoading(true);
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/login`, {
-                email,
-                password
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/client/login`, {
+                email: loginEmail,
+                password: loginPassword
             });
 
             if (response.data) {
                 setLoginSuccess(true);
-                localStorage.setItem("adminToken", JSON.stringify({
-                    token: response.data.token,
-                    user: response.data.user
-                }));
-                
+                localStorage.setItem("clientToken", JSON.stringify(response.data));
+
                 setTimeout(() => {
-                    navigate("/plataforma");
+                    navigate("/dashboard-client");
                 }, 1000);
             }
 
@@ -67,7 +65,7 @@ function AdminLogin() {
     return (
         <div className="w-full h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] text-white 
             flex items-center justify-center relative overflow-hidden">
-            
+
             <AnimatePresence>
                 {loginSuccess ? (
                     <motion.div
@@ -101,7 +99,7 @@ function AdminLogin() {
 
                 {/* Botão Voltar */}
                 <button
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/')}
                     className="absolute left-4 top-4 text-gray-400 hover:text-white flex items-center gap-1 
                         transition-colors text-sm group"
                 >
@@ -110,65 +108,57 @@ function AdminLogin() {
                 </button>
 
                 <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 h-16 rounded-full bg-[#e67f00] 
+                    <div className="w-16 h-16 rounded-full bg-[#26d67e] 
                         flex items-center justify-center mb-2">
                         <Lock className="text-3xl" />
                     </div>
                     <span className="text-sm text-gray-300 uppercase tracking-wider">
-                        Área restrita
+                    Acesse seus contratos aqui
                     </span>
                     <h1 className="text-2xl font-bold">
-                        Painel Administrativo
+                        Bem vindo!
                     </h1>
                 </div>
 
-                <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+                <div className="w-full flex flex-col gap-4">
+                    {/* Mensagem de erro */}
                     {error && (
-                        <div className="w-full p-3 rounded-lg bg-red-500/20 border border-red-500/30 
-                            text-red-100 text-sm text-center">
+                        <div className="w-full p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-100 text-sm text-center">
                             {error}
                         </div>
                     )}
 
                     <input
+                        onChange={(e) => setLoginEmail(e.target.value)}
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="E-mail"
                         className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10
-                            focus:border-[#e67f00] outline-none transition-all
+                            focus:border-[#26d67e] outline-none transition-all
                             placeholder:text-gray-400"
-                        required
                     />
                     <input
+                        onChange={(e) => setLoginPassword(e.target.value)}
                         type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
                         placeholder="Senha"
                         className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10
-                            focus:border-[#e67f00] outline-none transition-all
+                            focus:border-[#26d67e] outline-none transition-all
                             placeholder:text-gray-400"
-                        required
                     />
+                </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#1a1a1a] hover:bg-[#ff8c00] text-white 
-                            py-3 rounded-lg font-semibold transition-all
-                            hover:shadow-lg hover:shadow-[#e67f00]/20
-                            disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
+                <button
+                    onClick={handleLogin}
+                    disabled={loading}
+                    className="w-full bg-[#1a1a1a] hover:bg-[#26d67e] text-white 
+                        py-3 rounded-lg font-semibold transition-all
+                        hover:shadow-lg hover:shadow-[#26d67e]/20"
+                >
+                    {loading ? 'Entrando...' : 'Entrar'}
+                </button>
 
-                <span className="text-sm text-gray-400 text-center">
-                    Este é um ambiente seguro e restrito apenas para administradores autorizados.
-                </span>
             </section>
         </div>
     );
 }
 
-export default AdminLogin;
+export default ClientLogin;

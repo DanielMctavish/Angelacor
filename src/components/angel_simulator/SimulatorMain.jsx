@@ -6,10 +6,14 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import ClientDetailsModal from './ClientDetailsModal';
+import { useNavigate } from 'react-router-dom';
+import { ArrowBack } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 
 function SimulatorMain() {
   const [selectedClient, setSelectedClient] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   const calculateTotalLoans = (client) => {
     return client.contracts.reduce((total, contract) => total + contract.value, 0);
@@ -72,6 +76,21 @@ function SimulatorMain() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#f5f5f5] p-8">
+      {/* Botão Voltar */}
+      <motion.button
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => navigate('/colaborador-dashboard')}
+        className="absolute top-4 left-24 flex items-center gap-2 px-4 py-2 
+          bg-[#e67f00] hover:bg-[#ff8c00] text-white rounded-lg 
+          transition-colors shadow-md"
+      >
+        <ArrowBack fontSize="small" />
+        Voltar ao Dashboard
+      </motion.button>
+
       <img src="/angelcor_logo.png" alt="Logo" className="absolute top-4 left-4 w-16 h-16" />
       <h1 className="text-5xl font-light text-[#333333] mb-8 flex items-center bebas-neue-regular">
         <PersonIcon className="mr-4 text-[#e67f00]" fontSize="large" />

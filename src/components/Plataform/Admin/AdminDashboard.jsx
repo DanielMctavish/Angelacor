@@ -9,12 +9,13 @@ import ClientDetailsModal from './Clients/ClientDetailsModal';
 import CreateBankModal from './Banks/CreateBankModal';
 import { AccountBalance } from '@mui/icons-material';
 
-import logoAngelCor from "../../../../public/angelcor_logo.png"
+import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
 import ListProposalsModal from './Proposals/ListProposalsModal';
 
 function AdminDashboard() {
     const navigate = useNavigate();
+    const [user, setUser] = useState(null);
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,39 +28,41 @@ function AdminDashboard() {
 
     useEffect(() => {
         checkAuth();
-        fetchBanks();
     }, []);
 
     const checkAuth = async () => {
         try {
             const adminDataString = localStorage.getItem('adminToken');
             if (!adminDataString) {
-                navigate('/login');
+                navigate('/admin-login');
                 return;
             }
 
             const adminData = JSON.parse(adminDataString);
             if (!adminData || !adminData.token) {
-                navigate('/login');
+                navigate('/admin-login');
                 return;
             }
 
-            // Tenta fazer a requisição com o token
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/client/find-all`, {
-                headers: {
-                    'Authorization': `Bearer ${adminData.token}`
-                }
-            });
+            const [clientsResponse, banksResponse] = await Promise.all([
+                axios.get(`${import.meta.env.VITE_API_URL}/client/find-all`, {
+                    headers: { 'Authorization': `Bearer ${adminData.token}` }
+                }),
+                axios.get(`${import.meta.env.VITE_API_URL}/bank/list`, {
+                    headers: { 'Authorization': `Bearer ${adminData.token}` }
+                })
+            ]);
 
-            // Se chegou aqui, o token é válido
-            setClients(response.data || []);
+            setUser(adminData.user);
+            setClients(clientsResponse.data || []);
+            setBanks(banksResponse.data || []);
             setLoading(false);
 
         } catch (error) {
-            // Se der erro 401 ou qualquer outro erro, redireciona para o login
+            console.error('Erro na autenticação ou busca de dados:', error);
             if (error.response?.status === 401 || error.response?.status === 403) {
                 localStorage.removeItem('adminToken');
-                navigate('/login');
+                navigate('/admin-login');
             }
             setLoading(false);
         }
@@ -67,7 +70,11 @@ function AdminDashboard() {
 
     const fetchBanks = async () => {
         try {
-            const adminData = JSON.parse(localStorage.getItem('adminToken'));
+            const adminDataString = localStorage.getItem('adminToken');
+            if (!adminDataString) return;
+
+            const adminData = JSON.parse(adminDataString);
+            if (!adminData || !adminData.token) return;
 
             const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank/list`, {
                 headers: {
@@ -99,6 +106,12 @@ function AdminDashboard() {
     const handleCreateProposalSuccess = () => {
         checkAuth(); // Recarrega a lista de clientes
         setIsCreateProposalModalOpen(false);
+    };
+
+    // Função para logout
+    const handleLogout = () => {
+        localStorage.removeItem('adminToken');
+        navigate('/admin-login');
     };
 
     if (loading) {
@@ -163,7 +176,7 @@ function AdminDashboard() {
                         <input
                             type="text"
                             placeholder="Buscar cliente..."
-                            className="bg-transparent outline-none text-sm w-full"
+                            className="bg-transparent outline-none text-sm w-full text-white"
                         />
                     </div>
                 </motion.div>
