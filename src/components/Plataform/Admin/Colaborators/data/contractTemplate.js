@@ -194,6 +194,71 @@ export const contractTemplate = {
     `
 };
 
+export const confidentialityTemplate = {
+    template: (colaborador) => `
+        <h2 style="text-align: center; margin-bottom: 30px;">TERMO DE CONFIDENCIALIDADE – TRIUNFO ASSESSORIA LTDA</h2>
+
+        <div style="margin-bottom: 30px;">
+            <p><strong>Nome do Funcionário:</strong> ${colaborador.name || '_______________'}</p>
+            <p><strong>Matrícula:</strong> ${colaborador.id || '_______________'}</p>
+            <p><strong>Cargo:</strong> ${colaborador.function || '_______________'}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3>1. DO OBJETIVO</h3>
+            <p>1.1. O presente termo tem por objetivo estabelecer regras e proteção às informações referentes ao EMPREGADOR que o EMPREGADO tenha acesso.</p>
+            <p>1.2. Este termo adere ao contrato entabulado e vigente entre as partes, revogando expressamente as determinações diversas.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3>2. DA DEFINIÇÃO</h3>
+            <p>2.1. Para fins do presente contrato, entende-se por informação confidencial:</p>
+            <p>(a) qualquer informação relacionada ao negócio e operações do(a) EMPREGADOR(A) que não sejam públicas;</p>
+            <p>(b) informações contidas em pesquisas, faturamento, metas, comissões, planos de negócio, vendas, informações financeiras, informações contábeis, custos, dados de precificação, parceiros de negócios, informações de fornecedores, propriedade intelectual, especificações, expertises, técnicas, invenções e todos os métodos, conceitos ou ideias relacionadas ao negócio do EMPREGADOR(A);</p>
+            <p>2.1.1. Entende-se também como confidenciais quaisquer informações relativas a clientes (nome, documentos, transações financeiras, saldos e similares), modelos financeiros, políticas e processos internos, bem como dados de acesso aos sistemas utilizados.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3>3. DO SIGILO</h3>
+            <p>3.1. O(A) EMPREGADO(A) deverá manter em sigilo, durante a vigência do presente termo e mesmo após sua extinção, qualquer informação relativa aos negócios, políticas, segredos institucionais, organização, criação, lista de clientes, quadro de funcionários, faturamento, metas e comissões, bem como as demais características e informações supramencionadas, sejam estas obtidas direta ou indiretamente.</p>
+            <p>3.2. Todas as informações confidenciais são de propriedade exclusiva do EMPREGADOR, mesmo que tenham sido desenvolvidas ou modificadas pelo EMPREGADO(A) durante seu período de trabalho.</p>
+            <p>3.3. O EMPREGADO deverá adotar todas as medidas necessárias para garantir que as informações confidenciais não sejam acidentalmente divulgadas ou acessadas por terceiros não autorizados.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3>4. DA VIGÊNCIA</h3>
+            <p>4.1. O dever de confidencialidade permanece mesmo após o término do contrato de trabalho vigente, por tempo indeterminado, independentemente do motivo rescisório.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3>5. DAS PENALIDADES</h3>
+            <p>5.1. O descumprimento das obrigações de confidencialidade poderá sujeitar o EMPREGADO às sanções previstas e eventualmente aplicáveis na legislação trabalhista, cível e criminal, a depender do caso.</p>
+            <p>5.2. A violação da obrigação de confidencialidade pode causar a rescisão imediata deste contrato por justa causa, conforme o artigo 482, alínea g da CLT.</p>
+            <p>5.3. Em caso de violação desta cláusula o(a) EMPREGADO(A), poderá ser responsabilizado pelo pagamento das quantias equivalentes ao dano causado e estará sujeito ao pagamento de multa no valor de 5.000,00 (cinco mil reais), a ser devidamente atualizada e corrigidas no momento de sua aplicação.</p>
+            <p>5.4. Este termo será regido e interpretado de acordo com as leis brasileiras, e quaisquer disputas decorrentes do presente instrumento serão submetidas ao foro determinado em contrato de trabalho.</p>
+        </div>
+
+        <p style="margin-bottom: 30px;">Por estarem as partes de pleno acordo, assinam o presente TERMO DE CONFIDENCIALIDADE em duas vias, ficando a primeira em poder do EMPREGADOR, e a segunda com o(a) EMPREGADO(A).</p>
+
+        <div style="margin-bottom: 30px; text-align: center;">
+            <p>___________________________________________________</p>
+            <p>Guaratuba, _______ de janeiro de 2025</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 60px;">
+            <div style="text-align: center;">
+                <p style="margin-bottom: 5px;">____________________________________________________</p>
+                <p>TRIUNFO ASSESSORIA LTDA</p>
+            </div>
+
+            <div style="text-align: center;">
+                <p style="margin-bottom: 5px;">____________________________________________________</p>
+                <p>Empregado</p>
+            </div>
+        </div>
+    `
+};
+
 function valorPorExtenso(valor) {
     const unidades = [
         '', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove',

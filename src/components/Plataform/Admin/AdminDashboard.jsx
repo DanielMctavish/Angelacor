@@ -131,7 +131,7 @@ function AdminDashboard() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
             >
-                <AdminNavbar logo={logoAngelCor} area="Dashboard" />
+                <AdminNavbar logo={logoAngelCor} area="Dashboard Administrativo" />
             </motion.div>
 
             <main className="w-full max-w-[1200px] mx-auto p-4 space-y-6">

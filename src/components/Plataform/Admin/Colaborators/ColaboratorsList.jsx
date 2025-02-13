@@ -65,6 +65,30 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
         }
     };
 
+    const handleShowDetails = (colaborator) => {
+        const colaboratorWithDefaults = {
+            ...colaborator,
+            nationality: colaborator.nationality || 'brasileiro(a)',
+            address: colaborator.address || 'Não informado',
+            cpf: colaborator.cpf || 'Não informado',
+            rg: colaborator.rg || 'Não informado',
+            function: colaborator.function || 'Não informado',
+            salary: colaborator.salary || 0,
+            work_contract: colaborator.work_contract || '',
+        };
+        setDetailsModal({ isOpen: true, colaborator: colaboratorWithDefaults });
+    };
+
+    const handleEdit = (colaborator) => {
+        setDetailsModal({ isOpen: false });
+        setEditModal({ isOpen: true, colaborator });
+    };
+
+    const handlePictureSuccess = () => {
+        onRefresh();
+        setPictureModal({ isOpen: false, colaboratorId: null });
+    };
+
     if (loading) {
         return (
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 text-center">
@@ -97,10 +121,6 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
         setPictureModal({ isOpen: true, colaboratorId });
     };
 
-    const handlePictureSuccess = () => {
-        onRefresh(); // Atualiza a lista para mostrar a nova foto
-    };
-
     const calculateProgress = (experience) => {
         const currentXp = experience || 0;
         let nextLevel = null;
@@ -128,14 +148,6 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
             progress: Math.min(100, Math.max(0, progress)),
             nextLevelXp: nextLevel.xp
         };
-    };
-
-    const handleShowDetails = (colaborator) => {
-        setDetailsModal({ isOpen: true, colaborator });
-    };
-
-    const handleEdit = (colaborator) => {
-        setEditModal({ isOpen: true, colaborator });
     };
 
     return (

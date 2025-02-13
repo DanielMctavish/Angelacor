@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AdminPanelSettings, Groups } from '@mui/icons-material';
+import { AdminPanelSettings, Groups, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import logoAngelCor from "../../medias/logos/angelcor_logo.png";
 
@@ -9,6 +9,17 @@ function LoginSelector() {
     return (
         <div className="w-full h-screen bg-gradient-to-br from-[#133785] via-[#0a1c42] to-[#1a1a1a] 
             flex items-center justify-center p-4">
+            
+            <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => navigate('/')}
+                className="absolute top-6 left-6 text-white/70 hover:text-white 
+                    flex items-center gap-2 transition-colors group"
+            >
+                <ArrowBack className="group-hover:-translate-x-1 transition-transform" />
+                <span>Voltar para o início</span>
+            </motion.button>
             
             <div className="w-full max-w-[800px] flex flex-col items-center gap-8">
                 <motion.img 

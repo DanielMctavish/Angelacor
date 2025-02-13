@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Close, Edit, Person, Email, Badge, Phone, Home, Work, AttachMoney, EmojiEvents } from '@mui/icons-material';
+import { Close, Edit, Person, Email, Badge, Phone, Home, Work, AttachMoney, EmojiEvents, Print } from '@mui/icons-material';
+import { contractTemplate, confidentialityTemplate } from './data/contractTemplate';
 
 function ColaboratorDetails({ isOpen, onClose, colaborator, onEdit }) {
     if (!isOpen || !colaborator) return null;
@@ -13,6 +14,34 @@ function ColaboratorDetails({ isOpen, onClose, colaborator, onEdit }) {
             style: 'currency',
             currency: 'BRL'
         }).format(value);
+    };
+
+    const handlePrint = () => {
+        const contractHtml = contractTemplate.template(colaborator);
+        const confidentialityHtml = confidentialityTemplate.template(colaborator);
+        
+        // Cria um novo documento para impressão
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Documentos - ${colaborator.name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; }
+                        .page-break { page-break-before: always; }
+                        h2, h3 { color: #133785; }
+                    </style>
+                </head>
+                <body>
+                    ${contractHtml}
+                    <div class="page-break"></div>
+                    ${confidentialityHtml}
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.print();
     };
 
     return (
@@ -133,6 +162,24 @@ function ColaboratorDetails({ isOpen, onClose, colaborator, onEdit }) {
                         <h4 className="text-lg font-semibold text-[#e67f00]">Contrato de Trabalho</h4>
                         <div className="bg-white/5 rounded-lg p-4 text-gray-300">
                             <div dangerouslySetInnerHTML={{ __html: colaborator.work_contract }} />
+                        </div>
+                    </div>
+
+                    {/* Seção de Documentos */}
+                    <div className="bg-white/5 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-[#e67f00] mb-4">Documentos</h3>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center gap-2 px-4 py-2 bg-[#133785] hover:bg-[#1e4caf] 
+                                    transition-colors rounded-lg text-white"
+                            >
+                                <Print />
+                                Imprimir Documentos
+                            </button>
+                            <span className="text-sm text-gray-400">
+                                Inclui Contrato de Trabalho e Termo de Confidencialidade
+                            </span>
                         </div>
                     </div>
                 </div>
