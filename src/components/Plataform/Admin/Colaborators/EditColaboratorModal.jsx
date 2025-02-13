@@ -1,9 +1,9 @@
-import { Close, Print } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { motion } from 'framer-motion';
+import { Close } from '@mui/icons-material';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import axios from 'axios';
+import { toast } from '../../../Common/Toast/Toast';
 import { contractTemplate } from './data/contractTemplate';
 
 const FUNCTIONS = [
@@ -15,34 +15,13 @@ const FUNCTIONS = [
     'Sub Administrador'
 ];
 
-const modules = {
-    toolbar: [
-        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }],
-        ['link'],
-        ['clean']
-    ],
-};
-
-
-const formats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
-    'align',
-    'link'
-];
-
-function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
+function EditColaboratorModal({ isOpen, onClose, colaborator, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const quillRef = useRef();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: '',
         function: '',
         rankPosition: 1,
         salary: '',
@@ -52,10 +31,30 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
         address: '',
         phone_number: '',
         work_contract: '',
-        url_profile_cover: '',
         level: 1
     });
 
+    // Preenche o formulário quando o colaborador é carregado
+    useEffect(() => {
+        if (colaborator) {
+            setFormData({
+                name: colaborator.name,
+                email: colaborator.email,
+                function: colaborator.function,
+                rankPosition: colaborator.rankPosition,
+                salary: colaborator.salary,
+                experience: colaborator.experience,
+                cpf: colaborator.cpf || '',
+                rg: colaborator.rg || '',
+                address: colaborator.address || '',
+                phone_number: colaborator.phone_number || '',
+                work_contract: colaborator.work_contract || '',
+                level: colaborator.level
+            });
+        }
+    }, [colaborator]);
+
+    // Atualiza o contrato quando dados relevantes mudam
     useEffect(() => {
         const newContract = contractTemplate.template(formData);
         setFormData(prev => ({
@@ -69,8 +68,7 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
         formData.address,
         formData.phone_number,
         formData.function,
-        formData.salary,
-        formData.nationality
+        formData.salary
     ]);
 
     const handleEditorChange = (content) => {
@@ -101,17 +99,16 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                 throw new Error('Token não encontrado');
             }
 
-            // Formatar os dados antes de enviar
             const formattedData = {
                 ...formData,
-                salary: parseFloat(formData.salary), // Garantir que salary seja número
-                rankPosition: parseInt(formData.rankPosition), // Garantir que rankPosition seja número
-                experience: parseInt(formData.experience), // Garantir que experience seja número
-                level: parseInt(formData.level), // Garantir que level seja número
+                salary: parseFloat(formData.salary),
+                rankPosition: parseInt(formData.rankPosition),
+                experience: parseInt(formData.experience),
+                level: parseInt(formData.level)
             };
 
-            await axios.post(
-                `${import.meta.env.VITE_API_URL}/colaborator/create-colaborator`,
+            await axios.patch(
+                `${import.meta.env.VITE_API_URL}/colaborator/update?colaboratorId=${colaborator.id}`,
                 formattedData,
                 {
                     headers: {
@@ -120,70 +117,17 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                 }
             );
 
+            toast.success('Colaborador atualizado com sucesso!');
             onSuccess?.();
             onClose();
-            // Reset do formData
-            setFormData({
-                name: '',
-                email: '',
-                password: '',
-                function: '',
-                rankPosition: 1,
-                salary: '',
-                experience: 0,
-                cpf: '',
-                rg: '',
-                address: '',
-                phone_number: '',
-                work_contract: '',
-                url_profile_cover: '',
-                level: 1
-            });
 
         } catch (error) {
-            console.error('Erro ao criar colaborador:', error);
-            setError(error.response?.data?.message || 'Erro ao criar colaborador');
+            console.error('Erro ao atualizar colaborador:', error);
+            setError(error.response?.data?.message || 'Erro ao atualizar colaborador');
+            toast.error(error.response?.data?.message || 'Erro ao atualizar colaborador');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handlePrint = () => {
-        const printWindow = window.open('', '_blank');
-        
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <title>Contrato - ${formData.name}</title>
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            line-height: 1.6;
-                            color: #000;
-                            background: #fff;
-                            padding: 20px;
-                            max-width: 210mm; /* Tamanho A4 */
-                            margin: 0 auto;
-                        }
-                        @media print {
-                            body {
-                                padding: 12mm;
-                            }
-                            @page {
-                                margin: 12mm;
-                                size: A4;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${formData.work_contract}
-                </body>
-            </html>
-        `);
-        
-        printWindow.document.close();
     };
 
     if (!isOpen) return null;
@@ -196,31 +140,31 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
             <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-[#1f1f1f] rounded-xl p-6 w-[80%] max-h-[90vh] overflow-y-auto relative"
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                className="bg-[#1f1f1f] rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
             >
-                <button
-                    onClick={onClose}
-                    className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                >
-                    <Close />
-                </button>
-
-                <h2 className="text-2xl font-bold text-white mb-6">Novo Colaborador</h2>
-
-                {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
-                        {error}
-                    </div>
-                )}
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-white">Editar Colaborador</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white transition-colors"
+                    >
+                        <Close />
+                    </button>
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {error && (
+                        <div className="bg-red-500/10 text-red-500 p-4 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">
-                                Nome Completo
+                                Nome
                             </label>
                             <input
                                 type="text"
@@ -228,14 +172,13 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.name}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="Digite o nome completo"
                                 required
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">
-                                E-mail
+                                Email
                             </label>
                             <input
                                 type="email"
@@ -243,22 +186,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="Digite o e-mail"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                                Senha
-                            </label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="Digite a senha"
                                 required
                             />
                         </div>
@@ -276,11 +203,24 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                             >
                                 <option value="">Selecione uma função</option>
                                 {FUNCTIONS.map(func => (
-                                    <option key={func} value={func}>
-                                        {func}
-                                    </option>
+                                    <option key={func} value={func}>{func}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                                Posição no Ranking
+                            </label>
+                            <input
+                                type="number"
+                                name="rankPosition"
+                                value={formData.rankPosition}
+                                onChange={handleChange}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                                min="1"
+                                required
+                            />
                         </div>
 
                         <div>
@@ -293,7 +233,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.salary}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="Digite o salário"
                                 required
                             />
                         </div>
@@ -308,7 +247,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.cpf}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="000.000.000-00"
                                 required
                             />
                         </div>
@@ -323,7 +261,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.rg}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="0000000"
                                 required
                             />
                         </div>
@@ -338,7 +275,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.address}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="Endereço completo"
                                 required
                             />
                         </div>
@@ -353,7 +289,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                                 value={formData.phone_number}
                                 onChange={handleChange}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
-                                placeholder="(00) 00000-0000"
                                 required
                             />
                         </div>
@@ -364,15 +299,6 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                             <label className="block text-sm font-medium text-gray-300">
                                 Contrato de Trabalho
                             </label>
-                            <button
-                                type="button"
-                                onClick={handlePrint}
-                                className="flex items-center gap-2 px-3 py-1 bg-white/5 
-                                    hover:bg-white/10 rounded-lg transition-colors text-gray-300"
-                            >
-                                <Print className="text-[#e67f00]" />
-                                <span>Imprimir</span>
-                            </button>
                         </div>
                         <div className="mt-2 bg-transparent rounded-lg">
                             <ReactQuill
@@ -387,14 +313,23 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 
+                                transition-colors text-white"
+                        >
+                            Cancelar
+                        </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-[#e67f00] hover:bg-[#ff8c00] text-white py-2 rounded-lg 
-                            transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 rounded-lg bg-[#e67f00] hover:bg-[#ff8c00] 
+                                transition-colors text-white disabled:opacity-50 
+                                disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Criando...' : 'Criar Colaborador'}
+                            {loading ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
                 </form>
@@ -403,4 +338,24 @@ function CreateColaboratorModal({ isOpen, onClose, onSuccess }) {
     );
 }
 
-export default CreateColaboratorModal; 
+// Adicione as configurações do ReactQuill
+const modules = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link'],
+        ['clean']
+    ],
+};
+
+const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'align',
+    'link'
+];
+
+export default EditColaboratorModal; 

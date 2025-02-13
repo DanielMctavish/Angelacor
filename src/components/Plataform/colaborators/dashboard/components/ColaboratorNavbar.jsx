@@ -1,139 +1,191 @@
-import { Person, ExitToApp, Calculate } from '@mui/icons-material';
+import { Person, ExitToApp, Calculate, EmojiEvents } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from '../../../../Common/Toast/Toast';
 import logoAngelCor from "../../../../../medias/logos/angelcor_logo.png";
 import XpLevels from '../../../Admin/Colaborators/XP/XpLevels';
+import { useEffect, useState } from 'react';
+import SimulatorModal from '../../../../angel_simulator/SimulatorModal';
+import { Refresh, Logout } from '@mui/icons-material';
 
 function ColaboratorNavbar({ user, xp, level }) {
     const navigate = useNavigate();
-
-    const calculateNextLevel = () => {
-        const currentXp = xp || 0;
-        let nextLevelXp = null;
-        let currentLevelXp = 0;
-
-        // Encontra o próximo nível baseado no XP atual
-        Object.entries(XpLevels).forEach(([levelKey, xpRequired]) => {
-            if (currentXp < xpRequired && !nextLevelXp) {
-                nextLevelXp = xpRequired;
-            }
-            if (currentXp >= xpRequired) {
-                currentLevelXp = xpRequired;
-            }
-        });
-
-        // Se já estiver no nível máximo
-        if (!nextLevelXp) {
-            return {
-                progress: 100,
-                nextLevelXp: currentLevelXp,
-                currentLevelXp
-            };
-        }
-
-        const progress = ((currentXp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100;
-        return {
-            progress: Math.min(100, Math.max(0, progress)),
-            nextLevelXp,
-            currentLevelXp
-        };
-    };
-
-    const { progress, nextLevelXp, currentLevelXp } = calculateNextLevel();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('colaboratorData');
-        navigate('/login');
-        toast.success('Logout realizado com sucesso!');
+        navigate('/');
+    };
+
+    const isGerente = user?.function === 'Gerente';
+
+    // Cálculo do próximo nível
+    const calculateNextLevel = () => {
+        const baseXP = 100; // XP base para o primeiro nível
+        const multiplier = 1.5; // Multiplicador de dificuldade
+        return Math.floor(baseXP * Math.pow(multiplier, level - 1));
+    };
+
+    // Cálculo da porcentagem de progresso
+    const calculateProgress = () => {
+        const currentXp = xp || 0;
+        const currentLevel = level || 1;
+        
+        // XP necessário para o nível atual
+        const currentLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel - 1));
+        
+        // XP necessário para o próximo nível
+        const nextLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel));
+        
+        // XP necessário para o nível anterior
+        const previousLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel - 2));
+
+        // Progresso atual dentro do nível
+        const levelProgress = currentXp - currentLevelXP;
+        const totalLevelXP = nextLevelXP - currentLevelXP;
+        
+        // Calcula a porcentagem
+        const percentage = (levelProgress / totalLevelXP) * 100;
+        
+        // Garante que o valor esteja entre 0 e 100
+        return Math.min(100, Math.max(0, percentage));
     };
 
     return (
-        <motion.nav
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            className="w-full bg-white/10 backdrop-blur-sm border-b border-white/10 mb-6 relative rounded-lg"
-        >
-            <div className="max-w-7xl mx-auto px-4 py-3">
-                <div className="flex items-center justify-between">
-                    
-                    <div className="flex items-center gap-6">
-                        
-                        <div className="flex items-center gap-4">
-                            {/* Foto de Perfil */}
-                            <div className="relative">
-                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#e67f00]">
-                                    {user?.url_profile_cover ? (
-                                        <img
-                                            src={user.url_profile_cover}
-                                            alt={user.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-[#1f1f1f] flex items-center justify-center">
-                                            <Person className="text-gray-400" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="absolute -bottom-1 -right-1 bg-[#e67f00] text-white text-xs 
-                                    font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                                    {level}
+        <>
+            <div className="w-full">
+                <nav className={`w-full ${
+                    isGerente 
+                    ? 'bg-white shadow-lg' 
+                    : 'bg-white/10 backdrop-blur-sm border-b border-white/10'
+                }`}>
+                    <div className="max-w-7xl mx-auto px-4 py-3">
+                        <div className="flex items-center justify-between">
+                            {/* Lado Esquerdo - Logo e Nome */}
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src={logoAngelCor}
+                                    alt="AngelCor Logo"
+                                    className="h-8 w-auto"
+                                />
+                                <div className="flex flex-col">
+                                    <span className={`font-medium ${isGerente ? 'text-gray-800' : 'text-white'}`}>
+                                        {user?.name}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${isGerente ? 'text-gray-500' : 'text-gray-300'}`}>
+                                            {user?.function}
+                                        </span>
+                                        {isGerente && (
+                                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                Nível {level}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Nome e Função */}
-                            <div>
-                                <h2 className="font-semibold">{user?.name}</h2>
-                                <p className="text-sm text-gray-400">{user?.function}</p>
+                            {/* Lado Direito - Info XP e Botões */}
+                            <div className="flex items-center gap-4">
+                                {!isGerente && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-sm text-gray-300">Nível {level}</span>
+                                            <span className="text-xs text-[#e67f00]">{xp} XP</span>
+                                        </div>
+                                        <EmojiEvents className="text-[#e67f00]" />
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setShowLogoutConfirm(true)}
+                                    className={`p-2 rounded-lg transition-colors ${
+                                        isGerente
+                                        ? 'text-gray-600 hover:bg-gray-100'
+                                        : 'text-gray-300 hover:bg-white/5'
+                                    }`}
+                                    title="Sair"
+                                >
+                                    <Logout />
+                                </button>
                             </div>
                         </div>
                     </div>
+                </nav>
 
-                    {/* Botões de Ação */}
-                    <div className="flex items-center gap-3">
-                        {/* Botão do Simulador */}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => navigate('/simulador')}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg
-                                bg-[#e67f00] hover:bg-[#ff8c00] transition-colors text-sm"
-                        >
-                            <Calculate fontSize="small" />
-                            <span className="hidden md:inline">Simulador</span>
-                        </motion.button>
-
-                        {/* Botão de Logout */}
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg
-                                bg-white/5 hover:bg-white/10 transition-colors text-sm"
-                        >
-                            <ExitToApp fontSize="small" />
-                            <span className="hidden md:inline">Sair</span>
-                        </button>
+                {/* Barra de Progresso - Apenas para não gerentes */}
+                {!isGerente && (
+                    <div className="w-full bg-white/5">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <div className="h-1 w-full bg-white/10">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${calculateProgress()}%` }}
+                                    transition={{ duration: 1 }}
+                                    className="h-full bg-[#e67f00]"
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Barra de Progresso Simplificada */}
-            <div className="absolute bottom-0 left-0 w-full h-1">
-                <div className="relative w-full h-full bg-[#1f1f1f]">
+            {/* Modal de Confirmação de Logout */}
+            {showLogoutConfirm && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 
+                        flex items-center justify-center p-4"
+                >
                     <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.5 }}
-                        className="h-full bg-gradient-to-r from-[#e67f00] to-[#ff8c00]"
-                    />
-                    
-                    {/* Números de XP */}
-                    <div className="absolute -top-5 w-full px-4 flex justify-between text-[10px] text-gray-400">
-                        <span>{xp}</span>
-                        <span>{nextLevelXp}</span>
-                    </div>
-                </div>
-            </div>
-        </motion.nav>
+                        initial={{ scale: 0.95 }}
+                        animate={{ scale: 1 }}
+                        className={`${
+                            isGerente 
+                            ? 'bg-white' 
+                            : 'bg-[#1f1f1f] border border-white/10'
+                        } rounded-xl p-6 w-full max-w-sm`}
+                    >
+                        <h3 className={`text-xl font-bold mb-4 ${
+                            isGerente ? 'text-gray-800' : 'text-white'
+                        }`}>
+                            Confirmar Saída
+                        </h3>
+                        <p className={isGerente ? 'text-gray-600' : 'text-gray-300'}>
+                            Tem certeza que deseja sair?
+                        </p>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className={`px-4 py-2 rounded-lg transition-colors ${
+                                    isGerente
+                                    ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                    : 'bg-white/5 hover:bg-white/10 text-white'
+                                }`}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 
+                                    text-white rounded-lg transition-colors"
+                            >
+                                Sair
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+
+            {/* Modal do Simulador */}
+            <SimulatorModal 
+                isOpen={isSimulatorOpen}
+                onClose={() => setIsSimulatorOpen(false)}
+            />
+        </>
     );
 }
 

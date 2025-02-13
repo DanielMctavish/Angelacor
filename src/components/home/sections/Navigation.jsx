@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Menu, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import triunfoMiniLogo from '../../../medias/logos/triunfoMiniLogo.png';
+
 function Navigation() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const navigate = useNavigate();
@@ -13,9 +15,12 @@ function Navigation() {
         <nav className="w-full flex flex-col bg-[#ffffff] relative z-20 text-white">
             {/* Barra principal */}
             <div className="w-full flex justify-between items-center h-[100px] px-4 md:px-8 shadow-lg shadow-[#1e1e1e17]">
-                <div className="text-[#133785] flex justify-center items-center 
-                text-[32px] md:text-[40px] font-bold bg-[#f9f9f9] rounded-full w-[50px] h-[50px] md:w-[70px] md:h-[70px] p-2">
-                    t
+                <div className="flex items-center">
+                    <img 
+                        src={triunfoMiniLogo} 
+                        alt="Triunfo Logo" 
+                        className="w-[50px] h-[50px] md:w-[70px] md:h-[70px] object-contain rounded-full"
+                    />
                 </div>
 
                 {/* Menu desktop */}

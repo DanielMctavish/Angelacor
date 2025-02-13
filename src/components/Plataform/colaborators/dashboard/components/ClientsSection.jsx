@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientCard from './ClientCard';
 
-function ClientsSection({ displayedClients, progressSteps, stepDescriptions }) {
+function ClientsSection({ displayedClients, progressSteps, stepDescriptions, onClientUpdate }) {
     return (
         <div className="w-full space-y-6">
             <AnimatePresence>
@@ -18,6 +18,11 @@ function ClientsSection({ displayedClients, progressSteps, stepDescriptions }) {
                                 client={client}
                                 progressSteps={progressSteps}
                                 stepDescriptions={stepDescriptions}
+                                onPhotoUpdate={(updatedClient) => {
+                                    if (onClientUpdate) {
+                                        onClientUpdate(updatedClient);
+                                    }
+                                }}
                             />
                         </motion.div>
                     ))}

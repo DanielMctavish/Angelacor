@@ -11,6 +11,7 @@ import ColaboradorDashboard from './components/Plataform/colaborators/dashboard/
 import DashboardClient from './components/Plataform/Client/DashboardClient.jsx';
 import ClientLogin from './components/Plataform/Client/components/ClientLogin.jsx';
 import ToastContainer from './components/Common/Toast/Toast';
+import SimulatorModal from './components/angel_simulator/SimulatorModal';
 
 // Componente de rota protegida
 const ProtectedRoute = ({ children }) => {
@@ -25,26 +26,15 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/simulador" element={
-          <ProtectedRoute>
-            <SimulatorMain />
-          </ProtectedRoute>
-        } />
         <Route path="/plataforma" element={<AdminDashboard />} />
         <Route path="/plataforma/colaboradores" element={<ColaboratorsArea />} />
         <Route path="/login" element={<LoginSelector />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/" element={<TriunfoHome />} />
-
-        {/* Componentes do Colaborador */}
         <Route path="/colaborator-login" element={<ColaboratorLogin />} />
         <Route path="/colaborador-dashboard" element={<ColaboradorDashboard />} />
-
-        {/* Componentes do Cliente */}
-
         <Route path="/dashboard-client" element={<DashboardClient/>}/>
         <Route path="/client-login" element={<ClientLogin/>}/>
-
       </Routes>
       <ToastContainer />
     </Router>

@@ -2,6 +2,8 @@ import { Visibility, Delete, Groups, Refresh, EmojiEvents } from '@mui/icons-mat
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalAddColaboratorPicture from './ModalAddColaboratorPicture';
+import ColaboratorDetails from './ColaboratorDetails';
+import EditColaboratorModal from './EditColaboratorModal';
 
 function DeleteConfirmationModal({ isOpen, onClose, onConfirm, colaboratorName }) {
     if (!isOpen) return null;
@@ -49,6 +51,8 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, colaboratorName }
 function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, onGiveXp, xpLevels }) {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, colaborator: null });
     const [pictureModal, setPictureModal] = useState({ isOpen: false, colaboratorId: null });
+    const [detailsModal, setDetailsModal] = useState({ isOpen: false, colaborator: null });
+    const [editModal, setEditModal] = useState({ isOpen: false, colaborator: null });
 
     const handleDeleteClick = (colaborator) => {
         setDeleteModal({ isOpen: true, colaborator });
@@ -124,6 +128,14 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
             progress: Math.min(100, Math.max(0, progress)),
             nextLevelXp: nextLevel.xp
         };
+    };
+
+    const handleShowDetails = (colaborator) => {
+        setDetailsModal({ isOpen: true, colaborator });
+    };
+
+    const handleEdit = (colaborator) => {
+        setEditModal({ isOpen: true, colaborator });
     };
 
     return (
@@ -221,6 +233,7 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     title="Ver detalhes"
+                                                    onClick={() => handleShowDetails(colaborator)}
                                                     className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
                                                         rounded-lg transition-all"
                                                 >
@@ -269,6 +282,22 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                         onClose={() => setPictureModal({ isOpen: false, colaboratorId: null })}
                         colaboratorId={pictureModal.colaboratorId}
                         onSuccess={handlePictureSuccess}
+                    />
+                )}
+                {detailsModal.isOpen && (
+                    <ColaboratorDetails
+                        isOpen={detailsModal.isOpen}
+                        onClose={() => setDetailsModal({ isOpen: false, colaborator: null })}
+                        colaborator={detailsModal.colaborator}
+                        onEdit={handleEdit}
+                    />
+                )}
+                {editModal.isOpen && (
+                    <EditColaboratorModal
+                        isOpen={editModal.isOpen}
+                        onClose={() => setEditModal({ isOpen: false, colaborator: null })}
+                        colaborator={editModal.colaborator}
+                        onSuccess={onRefresh}
                     />
                 )}
             </AnimatePresence>

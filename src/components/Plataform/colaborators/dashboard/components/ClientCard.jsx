@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion';
 import { Person, WhatsApp, Email, Assignment, Description } from '@mui/icons-material';
+import { useState } from 'react';
+import UploadClientPhotoModal from './UploadClientPhotoModal';
 
-function ClientCard({ client, progressSteps, stepDescriptions }) {
+function ClientCard({ client, progressSteps, stepDescriptions, onPhotoUpdate }) {
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const steps = progressSteps(client);
     const progress = (steps.filter(Boolean).length / steps.length) * 100;
 
@@ -13,7 +16,12 @@ function ClientCard({ client, progressSteps, stepDescriptions }) {
         >
             {/* Cabeçalho do Card */}
             <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
+                <div 
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex-shrink-0
+                        cursor-pointer hover:ring-2 hover:ring-[#e67f00] transition-all
+                        group relative"
+                >
                     {client.url_profile_cover ? (
                         <img
                             src={client.url_profile_cover}
@@ -22,7 +30,7 @@ function ClientCard({ client, progressSteps, stepDescriptions }) {
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <Person className="text-gray-400" />
+                            <Person className="text-gray-400 group-hover:text-[#e67f00] transition-colors" />
                         </div>
                     )}
                 </div>
@@ -80,6 +88,17 @@ function ClientCard({ client, progressSteps, stepDescriptions }) {
                     ))}
                 </div>
             </div>
+
+            {/* Modal de Upload */}
+            <UploadClientPhotoModal
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                client={client}
+                onSuccess={(updatedClient) => {
+                    setIsUploadModalOpen(false);
+                    if (onPhotoUpdate) onPhotoUpdate(updatedClient);
+                }}
+            />
         </motion.div>
     );
 }

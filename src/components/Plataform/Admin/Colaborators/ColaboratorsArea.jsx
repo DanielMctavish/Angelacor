@@ -59,21 +59,6 @@ function ColaboratorsArea() {
                 throw new Error('Token não encontrado');
             }
 
-            // Se o colaborador tiver foto de perfil, deleta primeiro
-            if (colaborator.url_profile_cover) {
-                await axios.delete(
-                    `${import.meta.env.VITE_API_URL}/colaborator/delete-profile?colaboratorId=${colaborator.id}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${adminData.token}`
-                        },
-                        data: {
-                            url: colaborator.url_profile_cover
-                        }
-                    }
-                );
-            }
-
             // Depois deleta o colaborador
             await axios.delete(
                 `${import.meta.env.VITE_API_URL}/colaborator/delete?colaboratorId=${colaborator.id}`,

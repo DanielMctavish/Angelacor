@@ -88,7 +88,7 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
                 onClose();
             }
         } catch (error) {
-            console.error('Erro detalhado:', error.response?.data);
+            console.error('Erro detalhado: >>>>>>>>>>>>>> ', error.response);
             setError(error.response?.data?.message || 'Erro ao criar cliente');
         } finally {
             setLoading(false);

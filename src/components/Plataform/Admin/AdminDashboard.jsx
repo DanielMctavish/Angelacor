@@ -8,6 +8,7 @@ import CreateClientModal from './Clients/CreateClientModal';
 import ClientDetailsModal from './Clients/ClientDetailsModal';
 import CreateBankModal from './Banks/CreateBankModal';
 import { AccountBalance } from '@mui/icons-material';
+import { Person } from '@mui/icons-material';
 
 import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
@@ -214,86 +215,60 @@ function AdminDashboard() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full" style={{ minWidth: '800px' }}>
-                            <thead className="text-left text-gray-400 text-sm bg-[#1f1f1f2d]">
-                                <tr>
-                                    <th className="p-4 font-medium">Nome</th>
-                                    <th className="p-4 font-medium">Email</th>
-                                    <th className="p-4 font-medium">Status</th>
-                                    <th className="p-4 font-medium">Ações</th>
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-white/10">
+                                    <th className="py-3 px-4">Nome</th>
+                                    <th className="py-3 px-4">Responsável</th>
+                                    <th className="py-3 px-4">Email</th>
+                                    <th className="py-3 px-4">Telefone</th>
+                                    <th className="py-3 px-4">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {clients.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="4" className="text-center py-8 text-gray-400">
-                                            Nenhum cliente cadastrado
+                                {clients.map((client) => (
+                                    <tr key={client.id} className="border-b border-white/10">
+                                        <td className="py-3 px-4 flex items-center gap-3">
+                                            {client.url_profile_cover ? (
+                                                <img src={client.url_profile_cover} alt={client.name} className="w-10 h-10 rounded-full object-cover" />
+                                            ) : (
+                                                <Person className="text-gray-400" />
+                                            )}
+                                            {client.name}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            {client.colaborator ? (
+                                                <div className="flex items-center gap-2">
+                                                    {client.colaborator.url_profile_cover ? (
+                                                        <img 
+                                                            src={client.colaborator.url_profile_cover} 
+                                                            alt={client.colaborator.name} 
+                                                            className="w-8 h-8 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Person className="text-gray-400" />
+                                                    )}
+                                                    <div>
+                                                        <div className="text-sm">{client.colaborator.name}</div>
+                                                        <div className="text-xs text-gray-400">{client.colaborator.function}</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400">Não atribuído</span>
+                                            )}
+                                        </td>
+                                        <td className="py-3 px-4">{client.email}</td>
+                                        <td className="py-3 px-4">{client.phone}</td>
+                                        <td className="py-3 px-4">
+                                            <button
+                                                onClick={() => handleOpenDetails(client)}
+                                                className="text-indigo-600 hover:text-indigo-900"
+                                            >
+                                                Ver detalhes
+                                            </button>
                                         </td>
                                     </tr>
-                                ) : (
-                                    clients.map(client => (
-                                        <tr key={client.id} className="border-t border-white/10">
-                                            <td className="p-4">{client.name}</td>
-                                            <td className="p-4">{client.email}</td>
-                                            <td className="p-4">
-                                                {client.proposals && client.proposals.length > 0 ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-green-500 flex items-center gap-1">
-                                                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                                            Com proposta
-                                                        </span>
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedClient(client);
-                                                                setIsListProposalsModalOpen(true);
-                                                            }}
-                                                            className="text-xs text-gray-400 hover:text-white transition-all text-left"
-                                                        >
-                                                            {client.proposals.length} {client.proposals.length === 1 ? 'proposta' : 'propostas'}
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-1">
-                                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                                        <span className="text-red-500">Sem proposta</span>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        title="Ver detalhes"
-                                                        onClick={() => handleOpenDetails(client)}
-                                                        className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
-                                                            rounded-lg transition-all"
-                                                    >
-                                                        <Visibility fontSize="small" />
-                                                    </button>
-
-                                                    <button
-                                                        title="Criar proposta"
-                                                        onClick={() => {
-                                                            setSelectedClient(client);
-                                                            setIsCreateProposalModalOpen(true);
-                                                        }}
-                                                        className="p-2 text-gray-400 hover:text-white hover:bg-[#e67f00] 
-                                                            rounded-lg transition-all"
-                                                    >
-                                                        <Assignment fontSize="small" />
-                                                    </button>
-
-                                                    <button
-                                                        title="Excluir cliente"
-                                                        className="p-2 text-gray-400 hover:text-white hover:bg-red-600 
-                                                            rounded-lg transition-all"
-                                                    >
-                                                        <Delete fontSize="small" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     </div>
