@@ -29,7 +29,7 @@ function Footer() {
                 <div className="mt-8 text-center text-sm space-y-2">
                     <p>© 2024 Triunfo Correspondente Bancário. Todos os direitos reservados.</p>
                     <p>CNPJ: 14.837.075/0001-36</p>
-                    <p>Rua Antônio Alves Correia, 100 - Centro</p>
+                    <p>CONJ 30 ANDAR 03 COND INTER WALTER SPRENGE, 964 - Curitiba/PR - CEP: 80060-000</p>
                     <p>
                         <a href="tel:+5541996266007" className="hover:text-[#e67f00] transition-colors">
                             (41) 99626-6007
