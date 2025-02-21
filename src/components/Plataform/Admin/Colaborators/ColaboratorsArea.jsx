@@ -1,4 +1,4 @@
-import { Add, Search, Groups } from '@mui/icons-material';
+import { Add, Search, HomeMaxRounded } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -10,6 +10,7 @@ import CreateColaboratorModal from './CreateColaboratorModal';
 import XpLevels from './XP/XpLevels';
 import { toast } from '../../../Common/Toast/Toast';
 import ToastContainer from '../../../Common/Toast/Toast';
+import { useNavigate } from 'react-router-dom';
 
 function ColaboratorsArea() {
     const [colaborators, setColaborators] = useState([]);
@@ -17,6 +18,8 @@ function ColaboratorsArea() {
     const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const navigate = useNavigate("")
 
     const fetchColaborators = async () => {
         try {
@@ -87,7 +90,7 @@ function ColaboratorsArea() {
 
             // Calcula o novo XP (incremento de 100 por vez)
             const newXp = (colaborator.experience || 0) + 100;
-            
+
             // Calcula o novo level baseado no XP
             let newLevel = 1;
             Object.entries(XpLevels).forEach(([level, xpRequired]) => {
@@ -140,7 +143,7 @@ function ColaboratorsArea() {
         }
     };
 
-    const filteredColaborators = colaborators.filter(colab => 
+    const filteredColaborators = colaborators.filter(colab =>
         colab.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         colab.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         colab.function?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -156,8 +159,8 @@ function ColaboratorsArea() {
     return (
         <div className="w-full min-h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] text-white">
             {/* Modal */}
-            <CreateColaboratorModal 
-                isOpen={isModalOpen} 
+            <CreateColaboratorModal
+                isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={handleCreateSuccess}
             />
@@ -168,26 +171,38 @@ function ColaboratorsArea() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
             >
-                <AdminNavbar logo={logoAngelCor} area="Colaboradores"/>
+                <AdminNavbar logo={logoAngelCor} area="Colaboradores" />
             </motion.div>
 
             <main className="w-full max-w-[1200px] mx-auto p-4 space-y-6">
                 {/* Actions Bar com fade in */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                     className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"
                 >
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 
+                    <div className='flex gap-1'>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="w-full md:w-auto flex items-center justify-center gap-2 
                         bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
                         rounded-lg transition-all text-base"
-                    >
-                        <Add />
-                        Novo Colaborador
-                    </button>
+                        >
+                            <Add />
+                            Novo Colaborador
+                        </button>
+
+                        <button
+                            onClick={() => navigate("/plataforma")}
+                            className="w-full md:w-auto flex items-center justify-center gap-2 
+                        bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
+                        rounded-lg transition-all text-base"
+                        >
+                            <HomeMaxRounded />
+                            Dashboard
+                        </button>
+                    </div>
 
                     <div className="w-full md:w-auto flex items-center gap-2 bg-white/5 
                         border border-white/10 rounded-lg px-3 py-3 md:py-2">
@@ -203,7 +218,7 @@ function ColaboratorsArea() {
                 </motion.div>
 
                 {/* Dashboard Cards com animação sequencial */}
-                <motion.div 
+                <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.5 }}
@@ -250,7 +265,7 @@ function ColaboratorsArea() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 1.0 }}
                 >
-                    <RankingSection 
+                    <RankingSection
                         topColaborators={topColaborators}
                         hasAnyProposals={hasAnyProposals}
                     />
@@ -262,7 +277,7 @@ function ColaboratorsArea() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 1.2 }}
                 >
-                    <ColaboratorsList 
+                    <ColaboratorsList
                         colaborators={filteredColaborators}
                         loading={loading}
                         error={error}
