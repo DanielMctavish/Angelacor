@@ -74,7 +74,7 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
             rg: colaborator.rg || 'Não informado',
             function: colaborator.function || 'Não informado',
             salary: colaborator.salary || 0,
-            work_contract: colaborator.work_contract || '',
+            work_contract: colaborator.work_contract || 'Contrato em processo de elaboração.',
         };
         setDetailsModal({ isOpen: true, colaborator: colaboratorWithDefaults });
     };
@@ -165,10 +165,8 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                         <thead className="text-left text-gray-400 text-sm bg-[#1f1f1f2d]">
                             <tr>
                                 <th className="p-4 font-medium">Nome</th>
-                                <th className="p-4 font-medium">Email</th>
                                 <th className="p-4 font-medium">Função</th>
                                 <th className="p-4 font-medium">Level</th>
-                                <th className="p-4 font-medium">XP</th>
                                 <th className="p-4 font-medium">Criado em</th>
                                 <th className="p-4 font-medium">Ações</th>
                             </tr>
@@ -176,7 +174,7 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                         <tbody>
                             {colaborators.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="text-center py-8 text-gray-400">
+                                    <td colSpan="6" className="text-center py-8 text-gray-400">
                                         Nenhum colaborador cadastrado
                                     </td>
                                 </tr>
@@ -184,24 +182,24 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                                 colaborators.map(colaborator => (
                                     <tr key={colaborator.id} className="border-t border-white/10">
                                         <td className="p-4 flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-[#1f1f1f] overflow-hidden">
+                                            <div className="w-[60px] h-[60px] flex-shrink-0 rounded-full bg-[#1f1f1f] overflow-hidden">
                                                 {colaborator.url_profile_cover ? (
                                                     <img
                                                         src={colaborator.url_profile_cover}
                                                         alt={colaborator.name}
-                                                        className="w-full h-full object-cover"
+                                                        className="w-full h-full object-cover aspect-square"
                                                     />
                                                 ) : (
-                                                    <div onClick={() => handleShowModalAddPicture(colaborator.id)}
-                                                        className="w-full h-full flex items-center cursor-pointer
-                                                    justify-center text-gray-500">
-                                                        {colaborator.name.charAt(0).toUpperCase()}
+                                                    <div 
+                                                        onClick={() => handleShowModalAddPicture(colaborator.id)}
+                                                        className="w-full h-full flex items-center justify-center cursor-pointer text-gray-500 text-2xl"
+                                                    >
+                                                        <span>{colaborator.name.charAt(0).toUpperCase()}</span>
                                                     </div>
                                                 )}
                                             </div>
-                                            {colaborator.name}
+                                            <span className="truncate">{colaborator.name}</span>
                                         </td>
-                                        <td className="p-4">{colaborator.email}</td>
                                         <td className="p-4">{colaborator.function}</td>
                                         <td className="p-4">
                                             <div className="flex flex-col gap-1">

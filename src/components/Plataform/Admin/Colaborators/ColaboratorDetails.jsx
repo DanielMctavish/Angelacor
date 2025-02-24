@@ -160,8 +160,13 @@ function ColaboratorDetails({ isOpen, onClose, colaborator, onEdit }) {
                     {/* Contrato de Trabalho */}
                     <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-[#e67f00]">Contrato de Trabalho</h4>
-                        <div className="bg-white/5 rounded-lg p-4 text-gray-300">
-                            <div dangerouslySetInnerHTML={{ __html: colaborator.work_contract }} />
+                        <div className="bg-white/5 rounded-lg p-4 h-[40vh] overflow-y-auto">
+                            <div 
+                                className="whitespace-pre-wrap text-white"
+                                dangerouslySetInnerHTML={{ 
+                                    __html: contractTemplate.template(colaborator)
+                                }} 
+                            />
                         </div>
                     </div>
 
