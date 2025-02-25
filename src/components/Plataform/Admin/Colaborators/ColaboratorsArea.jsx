@@ -7,7 +7,7 @@ import logoAngelCor from "../../../../medias/logos/angelcor_logo.png";
 import RankingSection from './RankingSection';
 import ColaboratorsList from './ColaboratorsList';
 import CreateColaboratorModal from './CreateColaboratorModal';
-import XpLevels from './XP/XpLevels';
+import XpSystem from '../../XP/XpLevels';
 import { toast } from '../../../Common/Toast/Toast';
 import ToastContainer from '../../../Common/Toast/Toast';
 import { useNavigate } from 'react-router-dom';
@@ -83,62 +83,30 @@ function ColaboratorsArea() {
 
     const handleGiveXp = async (colaborator) => {
         try {
-            const adminData = JSON.parse(localStorage.getItem('adminToken'));
-            if (!adminData?.token) {
-                throw new Error('Token não encontrado');
-            }
+            // Usar o XpSystem para adicionar XP
+            const newXp = 100; // Quantidade de XP a ser adicionada
+            const response = await XpSystem.GiveColaboratorXp(colaborator.id, newXp);
 
-            // Calcula o novo XP (incremento de 100 por vez)
-            const newXp = (colaborator.experience || 0) + 100;
+            // Atualiza a lista após o sucesso
+            if (response) {
+                // Pega as informações do novo nível
+                const levelInfo = XpSystem.getCurrentLevel(response.experience);
 
-            // Calcula o novo level baseado no XP
-            let newLevel = 1;
-            Object.entries(XpLevels).forEach(([level, xpRequired]) => {
-                if (newXp >= xpRequired) {
-                    newLevel = parseInt(level.replace('level', ''));
+                // Verifica se subiu de nível comparando com o nível anterior
+                if (levelInfo.level > colaborator.level) {
+                    toast.success(
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-lg font-bold">🎉 Level Up! 🎉</span>
+                            <span>{colaborator.name} evoluiu para o nível {levelInfo.level}!</span>
+                        </div>
+                    );
                 }
-            });
 
-            // Verifica se subiu de nível
-            if (newLevel > (colaborator.level || 1)) {
-                toast.success(
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-lg font-bold">🎉 Level Up! 🎉</span>
-                        <span>{colaborator.name} evoluiu para o nível {newLevel}!</span>
-                    </div>,
-                    {
-                        duration: 4000,
-                        style: {
-                            background: '#1f1f1f',
-                            color: '#fff',
-                            border: '1px solid rgba(255,255,255,0.1)'
-                        },
-                        icon: '⭐'
-                    }
-                );
+                // Atualiza a lista de colaboradores
+                fetchColaborators();
             }
-
-            // Atualiza o colaborador com novo XP e level
-            await axios.patch(
-                `${import.meta.env.VITE_API_URL}/colaborator/update?colaboratorId=${colaborator.id}`,
-                {
-                    // ...colaborator, //que absurdo...
-                    experience: newXp,
-                    level: newLevel
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminData.token}`
-                    }
-                }
-            );
-
-            // Atualiza a lista
-            fetchColaborators();
-
         } catch (error) {
             console.error('Erro ao atualizar XP:', error);
-            setError('Erro ao atualizar XP');
             toast.error('Erro ao atualizar XP do colaborador');
         }
     };
@@ -284,7 +252,6 @@ function ColaboratorsArea() {
                         onRefresh={fetchColaborators}
                         onDelete={handleDeleteColaborator}
                         onGiveXp={handleGiveXp}
-                        xpLevels={XpLevels}
                     />
                 </motion.div>
             </main>

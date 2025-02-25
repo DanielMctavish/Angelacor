@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { 
     Close, 
     Person, 
@@ -18,6 +19,47 @@ import {
 } from '@mui/icons-material';
 import { useState } from 'react';
 import axios from 'axios';
+
+// Componente para o campo de input reutilizável
+const InputField = ({ label, icon: Icon, required, ...props }) => (
+    <div className="space-y-2">
+        <label className="text-sm text-gray-400 flex items-center gap-1">
+            {label}
+            {required && <span className="text-[#e67f00]">*</span>}
+        </label>
+        <div className="relative">
+            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+                {...props}
+                className={`w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
+                    focus:border-[#133785] outline-none text-white placeholder:text-gray-500
+                    ${required ? 'border-[#e67f00]/20' : 'border-gray-700'}`}
+            />
+        </div>
+    </div>
+);
+
+// Componente para o select reutilizável
+const SelectField = ({ label, icon: Icon, options, ...props }) => (
+    <div className="space-y-2">
+        <label className="text-sm text-gray-400">{label}</label>
+        <div className="relative">
+            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <select
+                {...props}
+                className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
+                    focus:border-[#133785] outline-none text-white"
+            >
+                <option value="">{`Selecione ${label.toLowerCase()}`}</option>
+                {options.map(option => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        </div>
+    </div>
+);
 
 function CreateClientModal({ isOpen, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
@@ -70,7 +112,18 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
                 birthDate: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
                 DDB: formData.DDB ? new Date(formData.DDB).toISOString() : null,
                 financialIncome: formData.financialIncome ? parseFloat(formData.financialIncome) : null,
-                proposals: []
+                rg: formData.rg || null,
+                fatherName: formData.fatherName || null,
+                motherName: formData.motherName || null,
+                accountNumber: formData.accountNumber || null,
+                matriculaBeneficio: formData.matriculaBeneficio || null,
+                sex: formData.sex || null,
+                naturalness: formData.naturalness || null,
+                nationality: formData.nationality || null,
+                inssPassword: formData.inssPassword || null,
+                especieCode: formData.especieCode || null,
+                clientType: formData.clientType || null,
+                address: formData.address || null
             };
             
             const response = await axios.post(
@@ -88,7 +141,7 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
                 onClose();
             }
         } catch (error) {
-            console.error('Erro detalhado: >>>>>>>>>>>>>> ', error.response);
+            console.error('Erro ao criar cliente:', error);
             setError(error.response?.data?.message || 'Erro ao criar cliente');
         } finally {
             setLoading(false);
@@ -99,7 +152,7 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
 
     return (
         <div className="fixed mt-0 w-full h-[100vh] inset-0 bg-black/70 flex items-center justify-center p-4 z-40">
-            <div className="bg-[#1a1a1a] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto text-gray-100">
+            <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto text-gray-100">
                 <div className="sticky top-0 bg-[#133785] p-4 border-b border-gray-700 flex justify-between items-center z-40">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <Person className="text-2xl" />
@@ -113,421 +166,312 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="p-6">
+                    <div className="mb-6 bg-[#e67f00]/10 border border-[#e67f00]/20 p-4 rounded-lg">
+                        <p className="text-sm text-gray-300">
+                            Os campos marcados com <span className="text-[#e67f00]">*</span> são obrigatórios.
+                        </p>
+                    </div>
+
                     {error && (
-                        <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-200 rounded-lg">
+                        <div className="mb-6 p-3 bg-red-900/30 border border-red-500/50 text-red-200 rounded-lg">
                             {error}
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Dados Pessoais */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
+                        <section className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2 flex items-center gap-2">
                                 <Badge />
                                 Dados Pessoais
                             </h3>
                             
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Nome Completo</label>
-                                <div className="relative">
-                                    <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        placeholder="Digite o nome completo"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <InputField
+                                    label="Nome Completo"
+                                    icon={Person}
+                                    required
+                                    type="text"
+                                    name="name"
+                                    placeholder="Digite o nome completo"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">E-mail</label>
-                                <div className="relative">
-                                    <Email className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="Digite o e-mail"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="CPF"
+                                    icon={Badge}
+                                    required
+                                    type="text"
+                                    name="cpf"
+                                    placeholder="Digite o CPF"
+                                    value={formData.cpf}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">CPF</label>
-                                <div className="relative">
-                                    <Badge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="cpf"
-                                        placeholder="Digite o CPF"
-                                        value={formData.cpf}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="RG"
+                                    icon={Badge}
+                                    type="text"
+                                    name="rg"
+                                    placeholder="Digite o RG"
+                                    value={formData.rg}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">RG</label>
-                                <div className="relative">
-                                    <Badge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="rg"
-                                        placeholder="Digite o RG"
-                                        value={formData.rg}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Data de Expedição"
+                                    icon={CalendarMonth}
+                                    type="date"
+                                    name="expeditionDate"
+                                    value={formData.expeditionDate}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Data de Expedição</label>
-                                <div className="relative">
-                                    <CalendarMonth className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        name="expeditionDate"
-                                        value={formData.expeditionDate}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white"
-                                    />
-                                </div>
-                            </div>
+                                <SelectField
+                                    label="Sexo"
+                                    icon={Wc}
+                                    name="sex"
+                                    value={formData.sex}
+                                    onChange={handleChange}
+                                    options={[
+                                        { value: 'M', label: 'Masculino' },
+                                        { value: 'F', label: 'Feminino' }
+                                    ]}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Sexo</label>
-                                <div className="relative">
-                                    <Wc className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        name="sex"
-                                        value={formData.sex}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white"
-                                    >
-                                        <option value="">Selecione o Sexo</option>
-                                        <option value="M">Masculino</option>
-                                        <option value="F">Feminino</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                                <InputField
+                                    label="Data de Nascimento"
+                                    icon={CalendarMonth}
+                                    type="date"
+                                    name="birthDate"
+                                    value={formData.birthDate}
+                                    onChange={handleChange}
+                                />
 
-                        {/* Dados de Contato e Endereço */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
-                                <Home />
-                                Contato e Endereço
+                                <InputField
+                                    label="Nome do Pai"
+                                    icon={Person}
+                                    type="text"
+                                    name="fatherName"
+                                    placeholder="Digite o nome do pai"
+                                    value={formData.fatherName}
+                                    onChange={handleChange}
+                                />
+
+                                <InputField
+                                    label="Nome da Mãe"
+                                    icon={Person}
+                                    type="text"
+                                    name="motherName"
+                                    placeholder="Digite o nome da mãe"
+                                    value={formData.motherName}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </section>
+
+                        {/* Contato */}
+                        <section className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2 flex items-center gap-2">
+                                <Phone />
+                                Contato
                             </h3>
                             
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Telefone</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        placeholder="Digite o telefone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <InputField
+                                    label="E-mail"
+                                    icon={Email}
+                                    required
+                                    type="email"
+                                    name="email"
+                                    placeholder="Digite o e-mail"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Endereço Completo</label>
-                                <div className="relative">
-                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        placeholder="Digite o endereço completo"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Telefone"
+                                    icon={Phone}
+                                    required
+                                    type="text"
+                                    name="phone"
+                                    placeholder="Digite o telefone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Naturalidade</label>
-                                <div className="relative">
-                                    <LocationCity className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="naturalness"
-                                        placeholder="Digite a naturalidade"
-                                        value={formData.naturalness}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
+                                <InputField
+                                    label="Endereço"
+                                    icon={Home}
+                                    type="text"
+                                    name="address"
+                                    placeholder="Digite o endereço"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                />
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Nacionalidade</label>
-                                <div className="relative">
-                                    <Public className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="nationality"
-                                        placeholder="Digite a nacionalidade"
-                                        value={formData.nationality}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        </section>
 
                         {/* Dados Bancários e INSS */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
+                        <section className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2 flex items-center gap-2">
                                 <AccountBalance />
                                 Dados Bancários e INSS
                             </h3>
                             
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Número da Conta</label>
-                                <div className="relative">
-                                    <AccountBalance className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="accountNumber"
-                                        placeholder="Digite o número da conta"
-                                        value={formData.accountNumber}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <InputField
+                                    label="Número da Conta"
+                                    icon={AccountBalance}
+                                    type="text"
+                                    name="accountNumber"
+                                    placeholder="Digite o número da conta"
+                                    value={formData.accountNumber}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Matrícula do Benefício</label>
-                                <div className="relative">
-                                    <Badge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="matriculaBeneficio"
-                                        placeholder="Digite a matrícula do benefício"
-                                        value={formData.matriculaBeneficio}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Matrícula do Benefício"
+                                    icon={Badge}
+                                    type="text"
+                                    name="matriculaBeneficio"
+                                    placeholder="Digite a matrícula"
+                                    value={formData.matriculaBeneficio}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Senha do INSS</label>
-                                <div className="relative">
-                                    <VpnKey className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        name="inssPassword"
-                                        placeholder="Digite a senha do INSS"
-                                        value={formData.inssPassword}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Senha do INSS"
+                                    icon={VpnKey}
+                                    type="password"
+                                    name="inssPassword"
+                                    placeholder="Digite a senha do INSS"
+                                    value={formData.inssPassword}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Código da Espécie</label>
-                                <div className="relative">
-                                    <Assignment className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="especieCode"
-                                        placeholder="Digite o código da espécie"
-                                        value={formData.especieCode}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Código da Espécie"
+                                    icon={Assignment}
+                                    type="text"
+                                    name="especieCode"
+                                    placeholder="Digite o código"
+                                    value={formData.especieCode}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Tipo de Cliente</label>
-                                <div className="relative">
-                                    <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        name="clientType"
-                                        value={formData.clientType}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white"
-                                    >
-                                        <option value="">Selecione o tipo</option>
-                                        <option value="PENSIONISTA">Pensionista</option>
-                                        <option value="APOSENTADO">Aposentado</option>
-                                        <option value="SERVIDOR_FEDERAL">Servidor Federal</option>
-                                        <option value="SERVIDOR_ESTADUAL">Servidor Estadual</option>
-                                        <option value="SERVIDOR_MUNICIPAL">Servidor Municipal</option>
-                                        <option value="FORCAS_ARMADAS">Forças Armadas</option>
-                                        <option value="SIAPE">SIAPE</option>
-                                        <option value="BPC_LOAS">BPC/LOAS</option>
-                                    </select>
-                                </div>
+                                <SelectField
+                                    label="Tipo de Cliente"
+                                    icon={Person}
+                                    name="clientType"
+                                    value={formData.clientType}
+                                    onChange={handleChange}
+                                    options={[
+                                        { value: 'PENSIONISTA', label: 'Pensionista' },
+                                        { value: 'APOSENTADO', label: 'Aposentado' },
+                                        { value: 'SERVIDOR_FEDERAL', label: 'Servidor Federal' },
+                                        { value: 'SERVIDOR_ESTADUAL', label: 'Servidor Estadual' },
+                                        { value: 'SERVIDOR_MUNICIPAL', label: 'Servidor Municipal' },
+                                        { value: 'FORCAS_ARMADAS', label: 'Forças Armadas' },
+                                        { value: 'SIAPE', label: 'SIAPE' },
+                                        { value: 'BPC_LOAS', label: 'BPC/LOAS' }
+                                    ]}
+                                />
+
+                                <InputField
+                                    label="DDB"
+                                    icon={CalendarMonth}
+                                    type="date"
+                                    name="DDB"
+                                    value={formData.DDB}
+                                    onChange={handleChange}
+                                />
                             </div>
-                        </div>
+                        </section>
 
                         {/* Outros Dados */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
+                        <section className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2 flex items-center gap-2">
                                 <Assignment />
                                 Outros Dados
                             </h3>
                             
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Nome do Pai</label>
-                                <div className="relative">
-                                    <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="fatherName"
-                                        placeholder="Digite o nome do pai"
-                                        value={formData.fatherName}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <InputField
+                                    label="Naturalidade"
+                                    icon={LocationCity}
+                                    type="text"
+                                    name="naturalness"
+                                    placeholder="Digite a naturalidade"
+                                    value={formData.naturalness}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Nome da Mãe</label>
-                                <div className="relative">
-                                    <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="motherName"
-                                        placeholder="Digite o nome da mãe"
-                                        value={formData.motherName}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Nacionalidade"
+                                    icon={Public}
+                                    type="text"
+                                    name="nationality"
+                                    placeholder="Digite a nacionalidade"
+                                    value={formData.nationality}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Renda Mensal</label>
-                                <div className="relative">
-                                    <AttachMoney className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="number"
-                                        name="financialIncome"
-                                        placeholder="Digite a renda mensal"
-                                        value={formData.financialIncome}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                                <InputField
+                                    label="Renda Mensal"
+                                    icon={AttachMoney}
+                                    type="number"
+                                    name="financialIncome"
+                                    placeholder="Digite a renda mensal"
+                                    value={formData.financialIncome}
+                                    onChange={handleChange}
+                                />
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Data de Nascimento</label>
-                                <div className="relative">
-                                    <CalendarMonth className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        name="birthDate"
-                                        value={formData.birthDate}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white"
-                                    />
-                                </div>
+                                <InputField
+                                    label="Senha de Acesso"
+                                    icon={Lock}
+                                    required
+                                    type="password"
+                                    name="password"
+                                    placeholder="Digite a senha"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                />
                             </div>
+                        </section>
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">DDB</label>
-                                <div className="relative">
-                                    <CalendarMonth className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        name="DDB"
-                                        value={formData.DDB}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Senha</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        placeholder="Digite a senha"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#272727] border border-gray-700 rounded-lg 
-                                            focus:border-[#133785] outline-none text-white placeholder:text-gray-500"
-                                    />
-                                </div>
-                            </div>
+                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-700">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 
+                                    rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-4 py-2 bg-[#e67f00] text-white rounded-lg hover:bg-[#ff8c00] 
+                                    transition-colors flex items-center gap-2"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                        Criando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Person />
+                                        Criar Cliente
+                                    </>
+                                )}
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="flex justify-end gap-4 pt-4 border-t border-gray-700">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-2 bg-[#272727] text-white rounded-lg hover:bg-[#861717] 
-                                transition-all flex items-center gap-2"
-                        >
-                            <Close />
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-6 py-2 bg-[#133785] text-white rounded-lg hover:bg-[#0f296d]
-                                disabled:opacity-50 disabled:cursor-not-allowed transition-all
-                                flex items-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                    Criando...
-                                </>
-                            ) : (
-                                <>
-                                    <Person />
-                                    Criar Cliente
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     );

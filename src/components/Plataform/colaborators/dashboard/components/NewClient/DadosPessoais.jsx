@@ -1,54 +1,67 @@
 import React from 'react';
-import { Badge, CalendarMonth } from '@mui/icons-material';
+import { Badge, CalendarMonth, Person } from '@mui/icons-material';
 
 const DadosPessoais = ({ formData, handleChange, errors }) => (
     <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-[#e67f00] border-b border-white/10 pb-2">
-            Dados Pessoais
-        </h3>
+        <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#e67f00]/10 flex items-center justify-center">
+                <Person className="text-[#e67f00]" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Dados Pessoais</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-                <Label text="Nome Completo" required={true} />
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+                    Nome Completo <span className="text-red-500">*</span>
+                </label>
                 <input
                     type="text"
+                    id="name"
                     name="name"
-                    placeholder="Nome Completo"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
                     required
+                    className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-white 
+                        focus:outline-none focus:border-[#e67f00] transition-colors
+                        ${errors?.name ? 'border-red-500' : 'border-white/10'}`}
+                    placeholder="Digite o nome completo"
                 />
+                {errors?.name && <span className="text-red-500 text-xs mt-1">{errors.name}</span>}
             </div>
             <div>
-                <Label text="CPF" required={true} />
+                <label htmlFor="cpf" className="block text-sm font-medium text-gray-300 mb-1">
+                    CPF <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
                     <Badge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
+                        id="cpf"
                         name="cpf"
-                        placeholder="Digite o CPF"
-                        value={formData.cpf}
+                        value={formData.cpf || ''}
                         onChange={handleChange}
                         maxLength={14}
+                        required
                         className={`w-full pl-10 pr-4 py-2 bg-[#272727] border rounded-lg 
                           outline-none text-white placeholder:text-gray-500
-                          ${errors.cpf ? 'border-red-500' : 'border-gray-700 focus:border-[#133785]'}`}
-                        required
+                          ${errors?.cpf ? 'border-red-500' : 'border-gray-700 focus:border-[#133785]'}`}
                     />
-                    {errors.cpf && (
+                    {errors?.cpf && (
                         <span className="text-xs text-red-500 mt-1">{errors.cpf}</span>
                     )}
                 </div>
             </div>
             <div>
-                <Label text="RG" required={false} />
+                <label htmlFor="rg" className="block text-sm font-medium text-gray-300 mb-1">
+                    RG
+                </label>
                 <div className="relative">
                     <Badge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
+                        id="rg"
                         name="rg"
-                        placeholder="Digite o RG (opcional)"
-                        value={formData.rg}
+                        value={formData.rg || ''}
                         onChange={handleChange}
                         maxLength={12}
                         className={`w-full pl-10 pr-4 py-2 bg-[#272727] border rounded-lg 
@@ -61,11 +74,14 @@ const DadosPessoais = ({ formData, handleChange, errors }) => (
                 </div>
             </div>
             <div>
-                <Label text="Data de Expedição do RG" required={false} />
+                <label htmlFor="expeditionDate" className="block text-sm font-medium text-gray-300 mb-1">
+                    Data de Expedição do RG
+                </label>
                 <div className="relative">
                     <CalendarMonth className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="date"
+                        id="expeditionDate"
                         name="expeditionDate"
                         value={formData.expeditionDate}
                         onChange={handleChange}
@@ -75,11 +91,14 @@ const DadosPessoais = ({ formData, handleChange, errors }) => (
                 </div>
             </div>
             <div>
-                <Label text="Data de Nascimento" required={false} />
+                <label htmlFor="birthDate" className="block text-sm font-medium text-gray-300 mb-1">
+                    Data de Nascimento
+                </label>
                 <div className="relative">
                     <CalendarMonth className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="date"
+                        id="birthDate"
                         name="birthDate"
                         value={formData.birthDate}
                         onChange={handleChange}
@@ -89,12 +108,15 @@ const DadosPessoais = ({ formData, handleChange, errors }) => (
                 </div>
             </div>
             <div>
-                <Label text="Sexo" required={false} />
+                <label htmlFor="sex" className="block text-sm font-medium text-gray-300 mb-1">
+                    Sexo
+                </label>
                 <select
+                    id="sex"
                     name="sex"
                     value={formData.sex}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
                 >
                     <option value="">Selecione o sexo</option>
                     <option value="M">Masculino</option>
@@ -102,36 +124,42 @@ const DadosPessoais = ({ formData, handleChange, errors }) => (
                 </select>
             </div>
             <div>
-                <Label text="Nome do Pai" required={false} />
+                <label htmlFor="fatherName" className="block text-sm font-medium text-gray-300 mb-1">
+                    Nome do Pai
+                </label>
                 <input
                     type="text"
+                    id="fatherName"
                     name="fatherName"
-                    placeholder="Nome do Pai (opcional)"
                     value={formData.fatherName}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
                 />
             </div>
             <div>
-                <Label text="Nome da Mãe" required={false} />
+                <label htmlFor="motherName" className="block text-sm font-medium text-gray-300 mb-1">
+                    Nome da Mãe
+                </label>
                 <input
                     type="text"
+                    id="motherName"
                     name="motherName"
-                    placeholder="Nome da Mãe (opcional)"
                     value={formData.motherName}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
                 />
             </div>
             <div>
-                <Label text="Naturalidade" required={false} />
+                <label htmlFor="naturalness" className="block text-sm font-medium text-gray-300 mb-1">
+                    Naturalidade
+                </label>
                 <input
                     type="text"
+                    id="naturalness"
                     name="naturalness"
-                    placeholder="Naturalidade (opcional)"
                     value={formData.naturalness}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
                 />
             </div>
         </div>

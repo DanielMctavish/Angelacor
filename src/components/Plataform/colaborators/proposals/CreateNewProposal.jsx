@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Close, Person, AccountBalance, Description } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../Common/Toast/Toast';
-import XpLevels from '../../Admin/Colaborators/XP/XpLevels';
+import XpLevels from '../../XP/XpLevels';
 
 function CreateNewProposal({ isOpen, onClose, onSuccess }) {
     const [clients, setClients] = useState([]);

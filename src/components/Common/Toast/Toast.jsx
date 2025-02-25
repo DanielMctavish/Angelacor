@@ -80,8 +80,8 @@ function ToastContainer() {
                             flex items-center gap-3 min-w-[300px] max-w-[400px]
                             p-4 rounded-lg shadow-lg backdrop-blur-sm
                             ${toast.type === 'success' 
-                                ? 'bg-[#e6e6e6]/95 border border-[#e67f00]/20' 
-                                : 'bg-[#e9e9e964]/95 border border-red-500/20'
+                                ? 'bg-[#1f1f1f]/95 border border-[#e67f00]/20' 
+                                : 'bg-[#1f1f1f]/95 border border-red-500/20'
                             }
                         `}
                     >
@@ -89,7 +89,7 @@ function ToastContainer() {
                         
                         <div className="flex-1">
                             {typeof toast.message === 'string' ? (
-                                <p className="text-white text-sm">{toast.message}</p>
+                                <p className="text-gray-200 text-sm">{toast.message}</p>
                             ) : (
                                 toast.message
                             )}
@@ -97,7 +97,7 @@ function ToastContainer() {
 
                         <button
                             onClick={() => removeToast(toast.id)}
-                            className="text-gray-400 hover:text-white transition-colors"
+                            className="text-gray-400 hover:text-gray-200 transition-colors"
                         >
                             <Close fontSize="small" />
                         </button>

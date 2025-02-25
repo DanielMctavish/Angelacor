@@ -1,4 +1,4 @@
-import { Add, Search, Visibility, Delete, Assignment, Groups } from '@mui/icons-material';
+import { Add, Search, Visibility, Delete, Assignment, Groups, Edit, Block, AccountBalance, Person } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -7,8 +7,9 @@ import AdminNavbar from './Navigation/AdminNavbar';
 import CreateClientModal from './Clients/CreateClientModal';
 import ClientDetailsModal from './Clients/ClientDetailsModal';
 import CreateBankModal from './Banks/CreateBankModal';
-import { AccountBalance } from '@mui/icons-material';
-import { Person } from '@mui/icons-material';
+import { Person as PersonIcon } from '@mui/icons-material';
+import { toast } from '@components/Common/Toast/Toast';
+import DeleteClientModal from './Clients/DeleteClientModal';
 
 import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
@@ -26,6 +27,7 @@ function AdminDashboard() {
     const [isCreateProposalModalOpen, setIsCreateProposalModalOpen] = useState(false);
     const [banks, setBanks] = useState([]);
     const [isListProposalsModalOpen, setIsListProposalsModalOpen] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, client: null });
 
     useEffect(() => {
         checkAuth();
@@ -107,6 +109,43 @@ function AdminDashboard() {
     const handleCreateProposalSuccess = () => {
         checkAuth(); // Recarrega a lista de clientes
         setIsCreateProposalModalOpen(false);
+    };
+
+    const handleEdit = (client) => {
+        console.log('Editar cliente:', client);
+    };
+
+    const handleBlock = (client) => {
+        console.log('Bloquear cliente:', client);
+    };
+
+    const handleDelete = (client) => {
+        setDeleteModal({ isOpen: true, client });
+    };
+
+    const handleConfirmDelete = async () => {
+        const client = deleteModal.client;
+        try {
+            const adminData = JSON.parse(localStorage.getItem('adminToken'));
+            
+            const response = await axios.delete(
+                `${import.meta.env.VITE_API_URL}/client/delete?clientId=${client.id}`, 
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminData.token}`
+                    }
+                }
+            );
+
+            if (response.status === 200) {
+                toast.success('Cliente excluído com sucesso!');
+                setClients(clients.filter(c => c.id !== client.id));
+                setDeleteModal({ isOpen: false, client: null });
+            }
+        } catch (error) {
+            console.error('Erro ao excluir cliente:', error);
+            toast.error(error.response?.data?.message || 'Erro ao excluir cliente');
+        }
     };
 
     // Função para logout
@@ -232,7 +271,7 @@ function AdminDashboard() {
                                             {client.url_profile_cover ? (
                                                 <img src={client.url_profile_cover} alt={client.name} className="w-10 h-10 rounded-full object-cover" />
                                             ) : (
-                                                <Person className="text-gray-400" />
+                                                <PersonIcon className="text-gray-400" />
                                             )}
                                             {client.name}
                                         </td>
@@ -246,7 +285,7 @@ function AdminDashboard() {
                                                             className="w-8 h-8 rounded-full object-cover"
                                                         />
                                                     ) : (
-                                                        <Person className="text-gray-400" />
+                                                        <PersonIcon className="text-gray-400" />
                                                     )}
                                                     <div>
                                                         <div className="text-sm">{client.colaborator.name}</div>
@@ -260,12 +299,43 @@ function AdminDashboard() {
                                         <td className="py-3 px-4">{client.email}</td>
                                         <td className="py-3 px-4">{client.phone}</td>
                                         <td className="py-3 px-4">
-                                            <button
-                                                onClick={() => handleOpenDetails(client)}
-                                                className="text-indigo-600 hover:text-indigo-900"
-                                            >
-                                                Ver detalhes
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    title="Ver detalhes"
+                                                    onClick={() => handleOpenDetails(client)}
+                                                    className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
+                                                        rounded-lg transition-all"
+                                                >
+                                                    <Visibility fontSize="small" />
+                                                </button>
+
+                                                <button
+                                                    title="Editar cliente"
+                                                    onClick={() => handleEdit(client)}
+                                                    className="p-2 text-gray-400 hover:text-white hover:bg-[#e67f00] 
+                                                        rounded-lg transition-all"
+                                                >
+                                                    <Edit fontSize="small" />
+                                                </button>
+
+                                                <button
+                                                    title="Bloquear cliente"
+                                                    onClick={() => handleBlock(client)}
+                                                    className="p-2 text-gray-400 hover:text-white hover:bg-yellow-600 
+                                                        rounded-lg transition-all"
+                                                >
+                                                    <Block fontSize="small" />
+                                                </button>
+
+                                                <button
+                                                    title="Excluir cliente"
+                                                    onClick={() => handleDelete(client)}
+                                                    className="p-2 text-gray-400 hover:text-white hover:bg-red-600 
+                                                        rounded-lg transition-all"
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -350,6 +420,12 @@ function AdminDashboard() {
                     isOpen={isListProposalsModalOpen}
                     onClose={() => setIsListProposalsModalOpen(false)}
                     client={selectedClient}
+                />
+                <DeleteClientModal
+                    isOpen={deleteModal.isOpen}
+                    onClose={() => setDeleteModal({ isOpen: false, client: null })}
+                    onConfirm={handleConfirmDelete}
+                    clientName={deleteModal.client?.name}
                 />
             </AnimatePresence>
         </div>

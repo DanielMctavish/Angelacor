@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Close, CloudUpload } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../../Common/Toast/Toast';
-import XpLevels from '../../../Admin/Colaborators/XP/XpLevels';
+import XpLevels from '../../../XP/XpLevels';
 
 function UploadClientPhotoModal({ isOpen, onClose, client, onSuccess }) {
     const [selectedFile, setSelectedFile] = useState(null);

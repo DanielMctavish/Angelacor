@@ -187,8 +187,6 @@ function ColaboradorDashboard() {
         }`}>
             <ColaboratorNavbar
                 user={user}
-                xp={user?.experience || 0}
-                level={user?.level || 1}
             />
             
             {/* Seção de Clientes */}

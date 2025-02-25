@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from '../../../../Common/Toast/Toast';
 import logoAngelCor from "../../../../../medias/logos/angelcor_logo.png";
-import XpLevels from '../../../Admin/Colaborators/XP/XpLevels';
+import XpSystem from '../../../XP/XpLevels';
 import { useEffect, useState } from 'react';
 import SimulatorModal from '../../../../angel_simulator/SimulatorModal';
 import { Refresh, Logout } from '@mui/icons-material';
 
-function ColaboratorNavbar({ user, xp, level }) {
+function ColaboratorNavbar({ user }) {
     const navigate = useNavigate();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+    const [levelInfo, setLevelInfo] = useState(null);
+
+    useEffect(() => {
+        const info = XpSystem.getCurrentLevel(user.experience);
+        setLevelInfo(info);
+    }, [user?.experience]);
 
     const handleLogout = () => {
         localStorage.removeItem('colaboratorData');
@@ -20,43 +26,32 @@ function ColaboratorNavbar({ user, xp, level }) {
 
     const isGerente = user?.function === 'Gerente';
 
-    // Cálculo do próximo nível
-    const calculateNextLevel = () => {
-        const baseXP = 100; // XP base para o primeiro nível
-        const multiplier = 1.5; // Multiplicador de dificuldade
-        return Math.floor(baseXP * Math.pow(multiplier, level - 1));
-    };
-
-    // Cálculo da porcentagem de progresso
+    // Cálculo da porcentagem de progresso usando o XpSystem
     const calculateProgress = () => {
-        const currentXp = xp || 0;
-        const currentLevel = level || 1;
+        if (!levelInfo) return 0;
         
-        // XP necessário para o nível atual
-        const currentLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel - 1));
+        // Pega o XP atual e o XP necessário para o próximo nível
+        const { currentXp, nextLevelXp, level } = levelInfo;
         
-        // XP necessário para o próximo nível
-        const nextLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel));
+        // Pega o XP necessário para o nível atual
+        const currentLevelXp = XpSystem.levels[`level${level}`];
         
-        // XP necessário para o nível anterior
-        const previousLevelXP = Math.floor(100 * Math.pow(1.5, currentLevel - 2));
-
-        // Progresso atual dentro do nível
-        const levelProgress = currentXp - currentLevelXP;
-        const totalLevelXP = nextLevelXP - currentLevelXP;
+        // Calcula quanto XP já foi obtido neste nível
+        const xpInCurrentLevel = currentXp - currentLevelXp;
+        
+        // Calcula quanto XP é necessário para passar de nível
+        const xpNeededForNextLevel = nextLevelXp - currentLevelXp;
         
         // Calcula a porcentagem
-        const percentage = (levelProgress / totalLevelXP) * 100;
+        const progress = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
         
-        // Garante que o valor esteja entre 0 e 100
-        return Math.min(100, Math.max(0, percentage));
+        return Math.min(100, Math.max(0, progress));
     };
 
     return (
         <>
             <div className="w-full">
-                <nav className={`w-full ${
-                    isGerente 
+                <nav className={`w-full relative ${isGerente
                     ? 'bg-white shadow-lg' 
                     : 'bg-white/10 backdrop-blur-sm border-b border-white/10'
                 }`}>
@@ -77,9 +72,9 @@ function ColaboratorNavbar({ user, xp, level }) {
                                         <span className={`text-sm ${isGerente ? 'text-gray-500' : 'text-gray-300'}`}>
                                             {user?.function}
                                         </span>
-                                        {isGerente && (
+                                        {levelInfo && (
                                             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                Nível {level}
+                                                Nível {levelInfo.level}
                                             </span>
                                         )}
                                     </div>
@@ -88,11 +83,14 @@ function ColaboratorNavbar({ user, xp, level }) {
 
                             {/* Lado Direito - Info XP e Botões */}
                             <div className="flex items-center gap-4">
-                                {!isGerente && (
+                                {!isGerente && levelInfo && (
                                     <div className="flex items-center gap-2">
                                         <div className="flex flex-col items-end">
-                                            <span className="text-sm text-gray-300">Nível {level}</span>
-                                            <span className="text-xs text-[#e67f00]">{xp} XP</span>
+                                            <span className="text-sm text-gray-300">Nível {levelInfo.level}</span>
+                                            <span className="text-xs text-[#e67f00]">{levelInfo.currentXp} XP</span>
+                                            <span className="text-xs text-gray-400">
+                                                Próximo nível: {levelInfo.xpNeeded} XP
+                                            </span>
                                         </div>
                                         <EmojiEvents className="text-[#e67f00]" />
                                     </div>
@@ -100,11 +98,10 @@ function ColaboratorNavbar({ user, xp, level }) {
 
                                 <button
                                     onClick={() => setShowLogoutConfirm(true)}
-                                    className={`p-2 rounded-lg transition-colors ${
-                                        isGerente
-                                        ? 'text-gray-600 hover:bg-gray-100'
-                                        : 'text-gray-300 hover:bg-white/5'
-                                    }`}
+                                    className={`p-2 rounded-lg transition-colors ${isGerente
+                                            ? 'text-gray-600 hover:bg-gray-100'
+                                            : 'text-gray-300 hover:bg-white/5'
+                                        }`}
                                     title="Sair"
                                 >
                                     <Logout />
@@ -112,23 +109,19 @@ function ColaboratorNavbar({ user, xp, level }) {
                             </div>
                         </div>
                     </div>
-                </nav>
 
-                {/* Barra de Progresso - Apenas para não gerentes */}
-                {!isGerente && (
-                    <div className="w-full bg-white/5">
-                        <div className="max-w-7xl mx-auto px-4">
-                            <div className="h-1 w-full bg-white/10">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${calculateProgress()}%` }}
-                                    transition={{ duration: 1 }}
-                                    className="h-full bg-[#e67f00]"
-                                />
-                            </div>
+                    {/* Barra de Progresso - Agora dentro do nav e ocupando toda a largura */}
+                    {!isGerente && levelInfo && (
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${calculateProgress()}%` }}
+                                transition={{ duration: 1 }}
+                                className="h-full bg-[#e67f00] origin-left"
+                            />
                         </div>
-                    </div>
-                )}
+                    )}
+                </nav>
             </div>
 
             {/* Modal de Confirmação de Logout */}
@@ -143,15 +136,13 @@ function ColaboratorNavbar({ user, xp, level }) {
                     <motion.div
                         initial={{ scale: 0.95 }}
                         animate={{ scale: 1 }}
-                        className={`${
-                            isGerente 
-                            ? 'bg-white' 
-                            : 'bg-[#1f1f1f] border border-white/10'
-                        } rounded-xl p-6 w-full max-w-sm`}
+                        className={`${isGerente
+                                ? 'bg-white'
+                                : 'bg-[#1f1f1f] border border-white/10'
+                            } rounded-xl p-6 w-full max-w-sm`}
                     >
-                        <h3 className={`text-xl font-bold mb-4 ${
-                            isGerente ? 'text-gray-800' : 'text-white'
-                        }`}>
+                        <h3 className={`text-xl font-bold mb-4 ${isGerente ? 'text-gray-800' : 'text-white'
+                            }`}>
                             Confirmar Saída
                         </h3>
                         <p className={isGerente ? 'text-gray-600' : 'text-gray-300'}>
@@ -160,11 +151,10 @@ function ColaboratorNavbar({ user, xp, level }) {
                         <div className="flex justify-end gap-3 mt-6">
                             <button
                                 onClick={() => setShowLogoutConfirm(false)}
-                                className={`px-4 py-2 rounded-lg transition-colors ${
-                                    isGerente
-                                    ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                                    : 'bg-white/5 hover:bg-white/10 text-white'
-                                }`}
+                                className={`px-4 py-2 rounded-lg transition-colors ${isGerente
+                                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                        : 'bg-white/5 hover:bg-white/10 text-white'
+                                    }`}
                             >
                                 Cancelar
                             </button>
@@ -181,7 +171,7 @@ function ColaboratorNavbar({ user, xp, level }) {
             )}
 
             {/* Modal do Simulador */}
-            <SimulatorModal 
+            <SimulatorModal
                 isOpen={isSimulatorOpen}
                 onClose={() => setIsSimulatorOpen(false)}
             />

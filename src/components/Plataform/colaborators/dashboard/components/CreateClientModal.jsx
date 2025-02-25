@@ -7,6 +7,7 @@ import DadosPessoais from './NewClient/DadosPessoais';
 import DadosContato from './NewClient/DadosContato';
 import DadosBeneficio from './NewClient/DadosBeneficio';
 import SenhaAcesso from './NewClient/SenhaAcesso';
+import XpSystem from '../../../XP/XpLevels';
 
 const clientTypes = ['APOSENTADO', 'PENSIONISTA', 'SERVIDOR'];
 
@@ -68,9 +69,10 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        address: '',
         cpf: '',
         phone: '',
+        password: '',
+        // Campos opcionais
         rg: '',
         expeditionDate: '',
         fatherName: '',
@@ -81,55 +83,100 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
         birthDate: '',
         financialIncome: '',
         naturalness: '',
-        nationality: 'Brasileira',
-        url_profile_cover: "",
+        nationality: '',
         inssPassword: '',
         DDB: '',
         especieCode: '',
         clientType: '',
-        password: ''
+        address: ''
     });
+
     const [errors, setErrors] = useState({});
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Limpa o erro do campo quando ele é alterado
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Validação dos campos obrigatórios
+        if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
+        if (!formData.email.trim()) newErrors.email = 'Email é obrigatório';
+        if (!formData.cpf.trim()) newErrors.cpf = 'CPF é obrigatório';
+        if (!formData.phone.trim()) newErrors.phone = 'Telefone é obrigatório';
+        if (!formData.password.trim()) newErrors.password = 'Senha é obrigatória';
+
+        // Validação de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (formData.email && !emailRegex.test(formData.email)) {
+            newErrors.email = 'Email inválido';
+        }
+
+        // Validação de CPF (básica)
+        if (formData.cpf && formData.cpf.length !== 11) {
+            newErrors.cpf = 'CPF inválido';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Valida CPF e RG antes de enviar
-        if (!validateCPF(formData.cpf)) {
-            setErrors(prev => ({ ...prev, cpf: 'CPF inválido' }));
-            toast.error('Por favor, insira um CPF válido');
+        
+        if (!validateForm()) {
             return;
         }
 
-        if (formData.rg && !validateRG(formData.rg)) {
-            setErrors(prev => ({ ...prev, rg: 'RG inválido' }));
-            toast.error('Por favor, insira um RG válido');
-            return;
-        }
-
+        setError('');
         setLoading(true);
 
         try {
             const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
-            if (!colaboratorData?.token) {
-                throw new Error('Token não encontrado');
-            }
+            console.log("Dados do colaborador:", colaboratorData); // Debug
 
-            // Formata as datas para o padrão ISO com horário
+            // Formata os dados conforme a interface IClient
             const formattedData = {
-                ...formData,
-                colaboratorId: colaboratorData.user.id,
-                expeditionDate: formData.expeditionDate ? new Date(formData.expeditionDate + 'T00:00:00.000Z').toISOString() : null,
-                birthDate: formData.birthDate ? new Date(formData.birthDate + 'T00:00:00.000Z').toISOString() : null,
-                DDB: formData.DDB ? new Date(formData.DDB + 'T00:00:00.000Z').toISOString() : null,
-                financialIncome: formData.financialIncome ? parseFloat(formData.financialIncome) : 0,
-                url_profile_cover: '',
-                proposals: []
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                cpf: formData.cpf.trim(),
+                phone: formData.phone.trim(),
+                password: formData.password,
+                // Campos opcionais
+                address: formData.address?.trim() || null,
+                rg: formData.rg?.trim() || null,
+                expeditionDate: formData.expeditionDate ? new Date(formData.expeditionDate).toISOString() : null,
+                fatherName: formData.fatherName?.trim() || null,
+                motherName: formData.motherName?.trim() || null,
+                accountNumber: formData.accountNumber?.trim() || null,
+                matriculaBeneficio: formData.matriculaBeneficio?.trim() || null,
+                sex: formData.sex?.trim() || null,
+                birthDate: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
+                financialIncome: formData.financialIncome ? parseFloat(formData.financialIncome) : null,
+                naturalness: formData.naturalness?.trim() || null,
+                nationality: formData.nationality?.trim() || null,
+                inssPassword: formData.inssPassword?.trim() || null,
+                DDB: formData.DDB ? new Date(formData.DDB).toISOString() : null,
+                especieCode: formData.especieCode?.trim() || null,
+                clientType: formData.clientType?.trim() || null,
+                colaboratorId: colaboratorData.user.id
             };
 
-            // Cria o cliente
-            const clientResponse = await axios.post(
+            const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/client/create-client`,
                 formattedData,
                 {
@@ -139,93 +186,55 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
                 }
             );
 
-            // Atualiza o XP do colaborador (+2000 XP por cliente criado)
-            const newXp = (colaboratorData.user.experience || 0) + 2000;
+            if (response.data) {
+                // Dar XP ao colaborador após criar cliente com sucesso
+                try {
+                    const xpAmount = 1200; // XP por criar cliente
+                    console.log("Tentando dar XP:", { 
+                        colaboradorId: colaboratorData.user.id, 
+                        xpAmount 
+                    }); // Debug
 
-            // Calcula o novo level baseado no XP
-            let newLevel = 1;
-            Object.entries(XpLevels).forEach(([levelKey, xpRequired]) => {
-                if (newXp >= xpRequired) {
-                    newLevel = parseInt(levelKey.replace('level', ''));
-                }
-            });
-
-            // Atualiza o XP e level no backend
-            const xpResponse = await axios.patch(
-                `${import.meta.env.VITE_API_URL}/colaborator/update?colaboratorId=${colaboratorData.user.id}`,
-                {
-                    ...colaboratorData.user,
-                    experience: newXp,
-                    level: newLevel
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${colaboratorData.token}`
+                    const xpResponse = await XpSystem.GiveColaboratorXp(colaboratorData.user.id, xpAmount);
+                    console.log("Resposta do XP:", xpResponse); // Debug
+                    
+                    // Pega as informações do novo nível
+                    const levelInfo = XpSystem.getCurrentLevel(response.data.colaborator.experience + xpAmount);
+                    console.log("Informações do nível:", levelInfo); // Debug
+                    
+                    // Verifica se subiu de nível
+                    if (levelInfo.level > response.data.colaborator.level) {
+                        toast.success(
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-lg font-bold">🎉 Level Up! 🎉</span>
+                                <span>Você evoluiu para o nível {levelInfo.level}!</span>
+                            </div>
+                        );
                     }
+
+                    // Atualiza o estado do usuário no localStorage
+                    const updatedColaboratorData = {
+                        ...colaboratorData,
+                        user: {
+                            ...colaboratorData.user,
+                            experience: response.data.colaborator.experience + xpAmount
+                        }
+                    };
+                    localStorage.setItem('colaboratorData', JSON.stringify(updatedColaboratorData));
+
+                } catch (xpError) {
+                    console.error('Erro detalhado ao dar XP:', xpError.response?.data || xpError); // Debug melhorado
                 }
-            );
 
-            // Atualiza os dados do colaborador no localStorage
-            localStorage.setItem('colaboratorData', JSON.stringify({
-                ...colaboratorData,
-                user: {
-                    ...colaboratorData.user,
-                    experience: newXp,
-                    level: newLevel
-                }
-            }));
-
-            toast.success('Cliente criado com sucesso!');
-
-            // Mostra mensagem de level up se necessário
-            if (newLevel > colaboratorData.user.level) {
-                toast.success(
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-lg font-bold">🎉 Level Up! 🎉</span>
-                        <span>Você evoluiu para o nível {newLevel}!</span>
-                    </div>
-                );
+                onSuccess();
+                onClose();
             }
-
-            onSuccess(clientResponse.data);
-            onClose();
-
         } catch (error) {
-            console.error('Erro ao criar cliente:', error);
-            toast.error(error.response?.data?.message || 'Erro ao criar cliente');
+            console.error('Erro ao criar cliente:', error.response?.data || error);
+            setError(error.response?.data?.message || 'Erro ao criar cliente');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        let formattedValue = value;
-        let error = null;
-
-        if (name === 'cpf') {
-            formattedValue = formatCPF(value);
-            if (!validateCPF(formattedValue)) {
-                error = 'CPF inválido';
-            }
-        } else if (name === 'rg') {
-            formattedValue = formatRG(value);
-            if (!validateRG(formattedValue)) {
-                error = 'RG inválido';
-            }
-        }
-
-        // Atualiza os erros
-        setErrors(prev => ({
-            ...prev,
-            [name]: error
-        }));
-
-        // Atualiza o formData
-        setFormData(prev => ({
-            ...prev,
-            [name]: formattedValue
-        }));
     };
 
     if (!isOpen) return null;
@@ -240,38 +249,46 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
             <motion.div
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
-                className="bg-[#1f1f1f] rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                className="bg-[#1f1f1f] rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
             >
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-white">Novo Cliente</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors"
-                    >
-                        <Close />
-                    </button>
-                </div>
+                <button
+                    onClick={onClose}
+                    className="absolute right-4 top-4 p-2 text-gray-400 hover:text-white 
+                        hover:bg-white/10 rounded-lg transition-all"
+                >
+                    <Close />
+                </button>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <DadosPessoais formData={formData} handleChange={handleChange} errors={errors} />
-                    <DadosContato formData={formData} handleChange={handleChange} />
-                    <DadosBeneficio formData={formData} handleChange={handleChange} />
-                    <SenhaAcesso formData={formData} handleChange={handleChange} />
+                    <DadosContato formData={formData} handleChange={handleChange} errors={errors} />
+                    <DadosBeneficio formData={formData} handleChange={handleChange} errors={errors} />
+                    <SenhaAcesso formData={formData} handleChange={handleChange} errors={errors} />
 
                     <div className="flex justify-end gap-3 pt-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white"
+                            disabled={loading}
+                            className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 
+                                rounded-lg transition-colors disabled:opacity-50"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 rounded-lg bg-[#e67f00] hover:bg-[#ff8c00] transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="px-4 py-2 bg-[#e67f00] text-white rounded-lg hover:bg-[#ff8c00] 
+                                transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Criando...' : 'Criar Cliente'}
+                            {loading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                    Criando...
+                                </>
+                            ) : (
+                                'Cadastrar Cliente'
+                            )}
                         </button>
                     </div>
                 </form>

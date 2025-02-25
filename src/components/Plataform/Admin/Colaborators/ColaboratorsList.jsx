@@ -1,9 +1,11 @@
-import { Visibility, Delete, Groups, Refresh, EmojiEvents } from '@mui/icons-material';
+import { Visibility, Delete, Groups, Refresh, EmojiEvents, Lock } from '@mui/icons-material';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalAddColaboratorPicture from './ModalAddColaboratorPicture';
 import ColaboratorDetails from './ColaboratorDetails';
 import EditColaboratorModal from './EditColaboratorModal';
+import ChangeColaboratorPassword from './ChangeColaboratorPassword';
+import XpSystem from '../../XP/XpLevels';
 
 function DeleteConfirmationModal({ isOpen, onClose, onConfirm, colaboratorName }) {
     if (!isOpen) return null;
@@ -53,6 +55,7 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
     const [pictureModal, setPictureModal] = useState({ isOpen: false, colaboratorId: null });
     const [detailsModal, setDetailsModal] = useState({ isOpen: false, colaborator: null });
     const [editModal, setEditModal] = useState({ isOpen: false, colaborator: null });
+    const [passwordModal, setPasswordModal] = useState({ isOpen: false, colaborator: null });
 
     const handleDeleteClick = (colaborator) => {
         setDeleteModal({ isOpen: true, colaborator });
@@ -87,6 +90,15 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
     const handlePictureSuccess = () => {
         onRefresh();
         setPictureModal({ isOpen: false, colaboratorId: null });
+    };
+
+    const handleChangePassword = (colaborator) => {
+        setPasswordModal({ isOpen: true, colaborator });
+    };
+
+    const handlePasswordSuccess = () => {
+        onRefresh();
+        setPasswordModal({ isOpen: false, colaborator: null });
     };
 
     if (loading) {
@@ -150,6 +162,11 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
         };
     };
 
+    // Função para pegar informações do nível
+    const getLevelInfo = (experience) => {
+        return XpSystem.getCurrentLevel(experience);
+    };
+
     return (
         <>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
@@ -179,98 +196,89 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                                     </td>
                                 </tr>
                             ) : (
-                                colaborators.map(colaborator => (
-                                    <tr key={colaborator.id} className="border-t border-white/10">
-                                        <td className="p-4 flex items-center gap-3">
-                                            <div className="w-[60px] h-[60px] flex-shrink-0 rounded-full bg-[#1f1f1f] overflow-hidden">
-                                                {colaborator.url_profile_cover ? (
-                                                    <img
-                                                        src={colaborator.url_profile_cover}
-                                                        alt={colaborator.name}
-                                                        className="w-full h-full object-cover aspect-square"
-                                                    />
-                                                ) : (
-                                                    <div 
-                                                        onClick={() => handleShowModalAddPicture(colaborator.id)}
-                                                        className="w-full h-full flex items-center justify-center cursor-pointer text-gray-500 text-2xl"
-                                                    >
-                                                        <span>{colaborator.name.charAt(0).toUpperCase()}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <span className="truncate">{colaborator.name}</span>
-                                        </td>
-                                        <td className="p-4">{colaborator.function}</td>
-                                        <td className="p-4">
-                                            <div className="flex flex-col gap-1">
-                                                <motion.span 
-                                                    key={colaborator.level}
-                                                    initial={{ scale: 1 }}
-                                                    animate={{ 
-                                                        scale: [1, 1.2, 1],
-                                                        color: ['#e67f00', '#ffd700', '#e67f00']
-                                                    }}
-                                                    transition={{ duration: 0.5 }}
-                                                    className="text-[#e67f00] font-semibold"
-                                                >
-                                                    Level {colaborator.level || 1}
-                                                </motion.span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-[#e67f00]"
-                                                            style={{ 
-                                                                width: `${calculateProgress(colaborator.experience).progress}%`,
-                                                                transition: 'width 0.3s ease-in-out'
-                                                            }}
+                                colaborators.map(colaborator => {
+                                    const levelInfo = getLevelInfo(colaborator.experience);
+                                    
+                                    return (
+                                        <tr key={colaborator.id} className="border-t border-white/10">
+                                            <td className="p-4 flex items-center gap-3">
+                                                <div className="w-[60px] h-[60px] flex-shrink-0 rounded-full bg-[#1f1f1f] overflow-hidden">
+                                                    {colaborator.url_profile_cover ? (
+                                                        <img
+                                                            src={colaborator.url_profile_cover}
+                                                            alt={colaborator.name}
+                                                            className="w-full h-full object-cover aspect-square"
                                                         />
-                                                    </div>
+                                                    ) : (
+                                                        <div 
+                                                            onClick={() => handleShowModalAddPicture(colaborator.id)}
+                                                            className="w-full h-full flex items-center justify-center cursor-pointer text-gray-500 text-2xl"
+                                                        >
+                                                            <span>{colaborator.name.charAt(0).toUpperCase()}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="truncate">{colaborator.name}</span>
+                                            </td>
+                                            <td className="p-4">{colaborator.function}</td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium">
+                                                        Nível {levelInfo.level}
+                                                    </span>
                                                     <span className="text-xs text-gray-400">
-                                                        {colaborator.experience || 0} XP
+                                                        {levelInfo.currentXp} XP
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        Próximo: {levelInfo.xpNeeded} XP
                                                     </span>
                                                 </div>
-                                                {calculateProgress(colaborator.experience).nextLevelXp && (
-                                                    <span className="text-xs text-gray-500">
-                                                        Próximo nível: {calculateProgress(colaborator.experience).nextLevelXp} XP
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-sm text-gray-400">
-                                            {formatDate(colaborator.createdAt)}
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    title="Ver detalhes"
-                                                    onClick={() => handleShowDetails(colaborator)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Visibility fontSize="small" />
-                                                </button>
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-400">
+                                                {formatDate(colaborator.createdAt)}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        title="Ver detalhes"
+                                                        onClick={() => handleShowDetails(colaborator)}
+                                                        className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
+                                                            rounded-lg transition-all"
+                                                    >
+                                                        <Visibility fontSize="small" />
+                                                    </button>
 
-                                                <button
-                                                    title="Excluir colaborador"
-                                                    onClick={() => handleDeleteClick(colaborator)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-red-600 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Delete fontSize="small" />
-                                                </button>
+                                                    <button
+                                                        title="Alterar senha"
+                                                        onClick={() => handleChangePassword(colaborator)}
+                                                        className="p-2 text-gray-400 hover:text-white hover:bg-[#e67f00] 
+                                                            rounded-lg transition-all"
+                                                    >
+                                                        <Lock fontSize="small" />
+                                                    </button>
 
-                                                <button
-                                                    title="Dar XP"
-                                                    onClick={() => onGiveXp(colaborator)}
-                                                    className="p-2 text-gray-400 hover:text-[#e67f00] hover:bg-white/5 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <EmojiEvents fontSize="small" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                                    <button
+                                                        title="Excluir colaborador"
+                                                        onClick={() => handleDeleteClick(colaborator)}
+                                                        className="p-2 text-gray-400 hover:text-white hover:bg-red-600 
+                                                            rounded-lg transition-all"
+                                                    >
+                                                        <Delete fontSize="small" />
+                                                    </button>
+
+                                                    <button
+                                                        title="Dar XP"
+                                                        onClick={() => onGiveXp(colaborator)}
+                                                        className="p-2 text-gray-400 hover:text-[#e67f00] hover:bg-white/5 
+                                                            rounded-lg transition-all"
+                                                    >
+                                                        <EmojiEvents fontSize="small" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
@@ -308,6 +316,14 @@ function ColaboratorsList({ colaborators, loading, error, onRefresh, onDelete, o
                         onClose={() => setEditModal({ isOpen: false, colaborator: null })}
                         colaborator={editModal.colaborator}
                         onSuccess={onRefresh}
+                    />
+                )}
+                {passwordModal.isOpen && (
+                    <ChangeColaboratorPassword
+                        isOpen={passwordModal.isOpen}
+                        onClose={() => setPasswordModal({ isOpen: false, colaborator: null })}
+                        colaborator={passwordModal.colaborator}
+                        onSuccess={handlePasswordSuccess}
                     />
                 )}
             </AnimatePresence>

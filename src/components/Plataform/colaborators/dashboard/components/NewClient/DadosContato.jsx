@@ -1,48 +1,71 @@
 import React from 'react';
+import { Phone } from '@mui/icons-material';
 
-const DadosContato = ({ formData, handleChange }) => (
-    <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-[#e67f00] border-b border-white/10 pb-2">
-            Dados de Contato
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+function DadosContato({ formData, handleChange, errors }) {
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-[#e67f00]/10 flex items-center justify-center">
+                    <Phone className="text-[#e67f00]" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Dados de Contato</h2>
+            </div>
+
             <div>
-                <Label text="Email" required={true} />
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                    Email <span className="text-red-500">*</span>
+                </label>
                 <input
                     type="email"
+                    id="email"
                     name="email"
-                    placeholder="Email"
-                    value={formData.email}
+                    value={formData.email || ''}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
                     required
+                    className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-white 
+                        focus:outline-none focus:border-[#e67f00] transition-colors
+                        ${errors?.email ? 'border-red-500' : 'border-white/10'}`}
+                    placeholder="Digite o email"
                 />
+                {errors?.email && <span className="text-red-500 text-xs mt-1">{errors.email}</span>}
             </div>
+
             <div>
-                <Label text="Telefone" required={true} />
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-1">
+                    Telefone <span className="text-red-500">*</span>
+                </label>
                 <input
                     type="tel"
+                    id="phone"
                     name="phone"
-                    placeholder="Telefone"
-                    value={formData.phone}
+                    value={formData.phone || ''}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
                     required
+                    className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-white 
+                        focus:outline-none focus:border-[#e67f00] transition-colors
+                        ${errors?.phone ? 'border-red-500' : 'border-white/10'}`}
+                    placeholder="Digite o telefone"
                 />
+                {errors?.phone && <span className="text-red-500 text-xs mt-1">{errors.phone}</span>}
             </div>
-            <div className="md:col-span-2">
-                <Label text="Endereço Completo" required={false} />
+
+            <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-300 mb-1">
+                    Endereço
+                </label>
                 <input
                     type="text"
+                    id="address"
                     name="address"
-                    placeholder="Endereço Completo (opcional)"
-                    value={formData.address}
+                    value={formData.address || ''}
                     onChange={handleChange}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white 
+                        focus:outline-none focus:border-[#e67f00] transition-colors"
+                    placeholder="Digite o endereço (opcional)"
                 />
             </div>
         </div>
-    </div>
-);
+    );
+}
 
 export default DadosContato;
