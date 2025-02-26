@@ -1,27 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import triunfoMiniLogo from '../../../medias/logos/triunfoMiniLogo.png';
 
 function Navigation() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Se rolou mais de 70px, compara com o último scroll
+            if (currentScrollY > 70) {
+                setIsVisible(currentScrollY < lastScrollY);
+            } else {
+                setIsVisible(true);
+            }
+            
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [lastScrollY]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
     return (
-        <nav className="w-full fixed top-0 z-50">
+        <nav className={`w-full fixed top-0 z-50 transition-transform duration-300 
+            ${!isVisible ? '-translate-y-full' : 'translate-y-0'}`}>
             {/* Barra de navegação principal */}
             <div className="w-full bg-white/80 backdrop-blur-md shadow-lg">
-                <div className="max-w-7xl mx-auto flex justify-between items-center h-20 px-4 md:px-8">
+                <div className="w-[99%] mx-auto flex justify-between items-center h-[7vh]">
                     {/* Logo */}
                     <div className="flex items-center">
                         <img 
                             src={triunfoMiniLogo} 
                             alt="Triunfo Logo" 
-                            className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-full 
+                            className="w-10 h-10 md:w-14 md:h-14 object-contain rounded-full 
                                 transition-transform duration-300 hover:scale-105"
                         />
                     </div>
@@ -34,13 +58,13 @@ function Navigation() {
                         <div className="flex items-center gap-4">
                             <button 
                                 onClick={() => navigate('/dashboard-client')}
-                                className="btn-client text-[#fb9445]"
+                                className="btn-client text-[#133785]"
                             >
                                 Sou Cliente
                             </button>
                             <button 
                                 onClick={() => navigate('/plataforma')}
-                                className="btn-platform text-[#133785]"
+                                className="btn-platform text-[#ffffff] bg-[#fb9445] p-3 font-bold rounded-[40px]"
                             >
                                 Plataforma
                             </button>
@@ -68,13 +92,6 @@ function Navigation() {
                 ${isMenuOpen ? 'top-20 opacity-100' : '-top-full opacity-0'}`}
             >
                 <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
-                    {/* Links de navegação mobile */}
-                    <div className="flex flex-col gap-4">
-                        <a href="#home" className="mobile-nav-link" onClick={toggleMenu}>Início</a>
-                        <a href="#sobre" className="mobile-nav-link" onClick={toggleMenu}>Sobre</a>
-                        <a href="#servicos" className="mobile-nav-link" onClick={toggleMenu}>Serviços</a>
-                        <a href="#contato" className="mobile-nav-link" onClick={toggleMenu}>Contato</a>
-                    </div>
 
                     {/* Botões de ação mobile */}
                     <div className="flex flex-col gap-3 pt-4">

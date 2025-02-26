@@ -23,7 +23,7 @@ function HeroSection() {
 
     return (
         <section className="w-full min-h-[120vh] flex flex-col justify-start bg-[#f1f1f1] relative overflow-hidden">
-            <div className='w-full h-[300px] md:h-[600px] flex justify-center items-center bg-zinc-100 px-0'>
+            <div className='w-full h-[300px] md:h-[600px] flex justify-center items-center bg-zinc-100 px-0 mt-[7vh]'>
                 <Swiper
                     style={{
                         '--swiper-navigation-color': '#fff',
