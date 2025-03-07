@@ -5,7 +5,7 @@ function ClientsSection({ displayedClients, progressSteps, stepDescriptions, onC
     return (
         <div className="w-full space-y-6">
             <AnimatePresence>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-[#fff]">
                     {displayedClients.map((client, index) => (
                         <motion.div
                             key={client.id}

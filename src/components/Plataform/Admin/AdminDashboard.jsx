@@ -1,4 +1,4 @@
-import { Add, Search, Visibility, Delete, Assignment, Groups, Edit, Block, AccountBalance, Person } from '@mui/icons-material';
+import { Add, Search, Visibility, Delete, Assignment, Groups, Edit, Block, AccountBalance, Person, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -10,6 +10,7 @@ import CreateBankModal from './Banks/CreateBankModal';
 import { Person as PersonIcon } from '@mui/icons-material';
 import { toast } from '@components/Common/Toast/Toast';
 import DeleteClientModal from './Clients/DeleteClientModal';
+import ClientsListAdmin from './Clients/ClientsListAdmin';
 
 import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
@@ -28,6 +29,7 @@ function AdminDashboard() {
     const [banks, setBanks] = useState([]);
     const [isListProposalsModalOpen, setIsListProposalsModalOpen] = useState(false);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, client: null });
+    const [isClientListExpanded, setIsClientListExpanded] = useState(true);
 
     useEffect(() => {
         checkAuth();
@@ -56,8 +58,13 @@ function AdminDashboard() {
                 })
             ]);
 
+            // Ordenar clientes pelo mais recente
+            const sortedClients = (clientsResponse.data || []).sort((a, b) => 
+                new Date(b.createdAt) - new Date(a.createdAt)
+            );
+
             setUser(adminData.user);
-            setClients(clientsResponse.data || []);
+            setClients(sortedClients);
             setBanks(banksResponse.data || []);
             setLoading(false);
 
@@ -127,9 +134,9 @@ function AdminDashboard() {
         const client = deleteModal.client;
         try {
             const adminData = JSON.parse(localStorage.getItem('adminToken'));
-            
+
             const response = await axios.delete(
-                `${import.meta.env.VITE_API_URL}/client/delete?clientId=${client.id}`, 
+                `${import.meta.env.VITE_API_URL}/client/delete?clientId=${client.id}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${adminData.token}`
@@ -174,7 +181,7 @@ function AdminDashboard() {
             </motion.div>
 
             <main className="w-full max-w-[1200px] mx-auto p-4 space-y-6">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
@@ -190,7 +197,7 @@ function AdminDashboard() {
                             <Add />
                             Criar Novo Cliente
                         </button>
-                        <button 
+                        <button
                             onClick={() => setIsCreateBankModalOpen(true)}
                             className="w-full md:w-auto flex items-center justify-center gap-2 
                             bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
@@ -199,7 +206,7 @@ function AdminDashboard() {
                             <Add />
                             Criar Novo Banco
                         </button>
-                        <button 
+                        <button
                             onClick={() => navigate('/plataforma/colaboradores')}
                             className="w-full md:w-auto flex items-center justify-center gap-2 
                             bg-[#343434] hover:bg-[#e67f00] px-4 py-3 md:py-2 
@@ -250,98 +257,40 @@ function AdminDashboard() {
                     className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden"
                 >
                     <div className="p-4 border-b border-white/10">
-                        <h2 className="text-lg md:text-xl font-semibold">Lista de Clientes</h2>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsClientListExpanded(!isClientListExpanded)}
+                                    className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                                >
+                                    {isClientListExpanded ? (
+                                        <ExpandLess className="text-white" />
+                                    ) : (
+                                        <ExpandMore className="text-white" />
+                                    )}
+                                </button>
+                                <h2 className="text-lg md:text-xl font-semibold">Lista de Clientes</h2>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-white/10">
-                                    <th className="py-3 px-4">Nome</th>
-                                    <th className="py-3 px-4">Responsável</th>
-                                    <th className="py-3 px-4">Email</th>
-                                    <th className="py-3 px-4">Telefone</th>
-                                    <th className="py-3 px-4">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {clients.map((client) => (
-                                    <tr key={client.id} className="border-b border-white/10">
-                                        <td className="py-3 px-4 flex items-center gap-3">
-                                            {client.url_profile_cover ? (
-                                                <img src={client.url_profile_cover} alt={client.name} className="w-10 h-10 rounded-full object-cover" />
-                                            ) : (
-                                                <PersonIcon className="text-gray-400" />
-                                            )}
-                                            {client.name}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            {client.colaborator ? (
-                                                <div className="flex items-center gap-2">
-                                                    {client.colaborator.url_profile_cover ? (
-                                                        <img 
-                                                            src={client.colaborator.url_profile_cover} 
-                                                            alt={client.colaborator.name} 
-                                                            className="w-8 h-8 rounded-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <PersonIcon className="text-gray-400" />
-                                                    )}
-                                                    <div>
-                                                        <div className="text-sm">{client.colaborator.name}</div>
-                                                        <div className="text-xs text-gray-400">{client.colaborator.function}</div>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400">Não atribuído</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4">{client.email}</td>
-                                        <td className="py-3 px-4">{client.phone}</td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    title="Ver detalhes"
-                                                    onClick={() => handleOpenDetails(client)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-[#133785] 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Visibility fontSize="small" />
-                                                </button>
-
-                                                <button
-                                                    title="Editar cliente"
-                                                    onClick={() => handleEdit(client)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-[#e67f00] 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Edit fontSize="small" />
-                                                </button>
-
-                                                <button
-                                                    title="Bloquear cliente"
-                                                    onClick={() => handleBlock(client)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-yellow-600 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Block fontSize="small" />
-                                                </button>
-
-                                                <button
-                                                    title="Excluir cliente"
-                                                    onClick={() => handleDelete(client)}
-                                                    className="p-2 text-gray-400 hover:text-white hover:bg-red-600 
-                                                        rounded-lg transition-all"
-                                                >
-                                                    <Delete fontSize="small" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <motion.div
+                        initial={false}
+                        animate={{
+                            height: isClientListExpanded ? 'auto' : 0,
+                            opacity: isClientListExpanded ? 1 : 0
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <ClientsListAdmin
+                            clients={clients}
+                            onOpenDetails={handleOpenDetails}
+                            onEdit={handleEdit}
+                            onBlock={handleBlock}
+                            onDelete={handleDelete}
+                        />
+                    </motion.div>
                 </motion.div>
                 <motion.div
                     initial={{ x: -100, opacity: 0 }}

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Add, Person, Description } from '@mui/icons-material';
+import { Add, Person, Description, AccountBalance, Calculate, Chat, Delete, ExpandMore, ExpandLess } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import ColaboratorNavbar from "./components/ColaboratorNavbar";
 import ClientsSection from "./components/ClientsSection";
@@ -9,6 +9,8 @@ import CreateClientModal from "./components/CreateClientModal";
 import { toast } from '../../../Common/Toast/Toast';
 import CreateNewProposal from '../proposals/CreateNewProposal';
 import AnalyzeProposalModal from './manager/AnalyzeProposalModal';
+import ProposalDetails from './ProposalDetails';
+import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 
 function ColaboradorDashboard() {
     const navigate = useNavigate();
@@ -20,6 +22,10 @@ function ColaboradorDashboard() {
     const [proposals, setProposals] = useState([]);
     const [loadingProposals, setLoadingProposals] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState(null);
+    const [selectedProposalForDetails, setSelectedProposalForDetails] = useState(null);
+    const [proposalToDelete, setProposalToDelete] = useState(null);
+    const [isClientsExpanded, setIsClientsExpanded] = useState(true);
+    const [isProposalsExpanded, setIsProposalsExpanded] = useState(true);
 
     // Definição dos passos de progresso
     const progressSteps = (client) => [
@@ -66,21 +72,28 @@ function ColaboradorDashboard() {
         }
     };
 
+    // Função auxiliar para verificar se o usuário tem privilégios administrativos
+    const hasAdminPrivileges = (userFunction) => {
+        return userFunction === 'Gerente' || userFunction === 'Sub Administrador';
+    };
+
     const getAllColaboratorClients = async () => {
         const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
 
-        try {
-            const url = colaboratorData.user.function === 'Gerente'
-                ? `${import.meta.env.VITE_API_URL}/client/find-all`
-                : `${import.meta.env.VITE_API_URL}/client/find-all?colaboratorId=${colaboratorData.user.id}`;
+        const url = hasAdminPrivileges(colaboratorData.user.function)
+            ? `${import.meta.env.VITE_API_URL}/client/find-all`
+            : `${import.meta.env.VITE_API_URL}/client/find-all?colaboratorId=${colaboratorData.user.id}`;
 
+        try {
             const response = await axios.get(url, {
                 headers: {
                     'Authorization': `Bearer ${colaboratorData.token}`
                 }
             });
 
-            setAllClients(response.data);
+            if (response.data) {
+                setAllClients(response.data);
+            }
         } catch (error) {
             console.error("Erro ao buscar clientes:", error);
             toast.error('Erro ao carregar clientes');
@@ -91,18 +104,25 @@ function ColaboradorDashboard() {
         const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
         setLoadingProposals(true);
 
-        try {
-            const url = colaboratorData.user.function === 'Gerente'
-                ? `${import.meta.env.VITE_API_URL}/proposal/find-all`
-                : `${import.meta.env.VITE_API_URL}/proposal/find-all?colaboratorId=${colaboratorData.user.id}`;
+        const url = hasAdminPrivileges(colaboratorData.user.function)
+            ? `${import.meta.env.VITE_API_URL}/proposal/find-all`
+            : `${import.meta.env.VITE_API_URL}/proposal/find-all?colaboratorId=${colaboratorData.user.id}`;
 
+        try {
             const response = await axios.get(url, {
                 headers: {
                     'Authorization': `Bearer ${colaboratorData.token}`
                 }
             });
 
-            setProposals(response.data.body);
+            if (response.data.body) {
+                // Ordenar propostas pela data mais recente
+                const sortedProposals = response.data.body.sort((a, b) => {
+                    return new Date(b.proposalDate) - new Date(a.proposalDate);
+                });
+                
+                setProposals(sortedProposals);
+            }
         } catch (error) {
             console.error("Erro ao buscar propostas:", error);
             toast.error('Erro ao carregar propostas');
@@ -170,6 +190,39 @@ function ColaboradorDashboard() {
         await refreshData();
     };
 
+    const handleDeleteProposal = async (proposalId) => {
+        try {
+            const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
+            
+            await axios.delete(
+                `${import.meta.env.VITE_API_URL}/proposal/delete?proposalId=${proposalId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${colaboratorData.token}`
+                    }
+                }
+            );
+
+            toast.success('Proposta excluída com sucesso!');
+            getAllColaboratorProposals();
+            setProposalToDelete(null); // Fecha o modal
+        } catch (error) {
+            console.error('Erro ao excluir proposta:', error);
+            toast.error('Erro ao excluir proposta');
+        }
+    };
+
+    // Função para atualizar apenas a proposta específica
+    const handleProposalUpdate = async (proposalId) => {
+        try {
+            // Em vez de buscar apenas uma proposta, vamos atualizar todas
+            await getAllColaboratorProposals();
+        } catch (error) {
+            console.error("Erro ao atualizar proposta:", error);
+            toast.error('Erro ao atualizar proposta');
+        }
+    };
+
     if (loading) {
         return (
             <div className="w-full h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] 
@@ -181,7 +234,7 @@ function ColaboradorDashboard() {
 
     return (
         <div className={`min-h-screen ${
-            user?.function === 'Gerente' 
+            hasAdminPrivileges(user?.function)
             ? 'bg-gradient-to-br from-[#1a1a1a] via-[#0f0f0f] to-[#000000]' 
             : 'bg-gradient-to-br from-[#133785] via-[#0a1c42] to-[#1a1a1a]'
         }`}>
@@ -192,9 +245,21 @@ function ColaboradorDashboard() {
             {/* Seção de Clientes */}
             <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl text-white font-semibold">
-                        {user?.function === 'Gerente' ? 'Todos os Clientes' : 'Meus Clientes'}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsClientsExpanded(!isClientsExpanded)}
+                            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                            {isClientsExpanded ? (
+                                <ExpandLess className="text-white" />
+                            ) : (
+                                <ExpandMore className="text-white" />
+                            )}
+                        </button>
+                        <h2 className="text-xl text-white font-semibold">
+                            {hasAdminPrivileges(user?.function) ? 'Todos os Clientes' : 'Meus Clientes'}
+                        </h2>
+                    </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] 
@@ -205,67 +270,40 @@ function ColaboradorDashboard() {
                     </button>
                 </div>
 
-                {allClients.length > 0 ? (
-                    user?.function === 'Gerente' ? (
-                        // Versão tabela para gerentes
-                        <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="border-b border-gray-100 bg-gray-50">
-                                        <th className="py-3 px-4 text-gray-600">Cliente</th>
-                                        <th className="py-3 px-4 text-gray-600">Contato</th>
-                                        <th className="py-3 px-4 text-gray-600">Progresso</th>
-                                        {user?.function === 'Gerente' && (
-                                            <th className="py-3 px-4 text-gray-600">Responsável</th>
-                                        )}
-                                        <th className="py-3 px-4 text-gray-600">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allClients.map((client) => (
-                                        <tr key={client.id} className="border-b border-gray-100">
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    {client.url_profile_cover ? (
-                                                        <img
-                                                            src={client.url_profile_cover}
-                                                            alt={client.name}
-                                                            className="w-8 h-8 rounded-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                                            <Person className="text-gray-400" />
-                                                        </div>
-                                                    )}
-                                                    <span className="text-gray-700">{client.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex flex-col text-sm">
-                                                    <span className="text-gray-700">{client.phone}</span>
-                                                    <span className="text-gray-500">{client.email}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex gap-1">
-                                                    {progressSteps(client).map((completed, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className={`h-2 w-4 rounded-full ${
-                                                                completed ? 'bg-green-500' : 'bg-gray-200'
-                                                            }`}
-                                                            title={stepDescriptions[index]}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </td>
+                <motion.div
+                    initial={false}
+                    animate={{
+                        height: isClientsExpanded ? 'auto' : 0,
+                        opacity: isClientsExpanded ? 1 : 0
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                >
+                    {allClients.length > 0 ? (
+                        hasAdminPrivileges(user?.function) ? (
+                            // Versão tabela para gerentes e sub administradores
+                            <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-gray-100 bg-gray-50">
+                                            <th className="py-3 px-4 text-gray-600">Cliente</th>
+                                            <th className="py-3 px-4 text-gray-600">Contato</th>
+                                            <th className="py-3 px-4 text-gray-600">Progresso</th>
                                             {user?.function === 'Gerente' && (
+                                                <th className="py-3 px-4 text-gray-600">Responsável</th>
+                                            )}
+                                            <th className="py-3 px-4 text-gray-600">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {allClients.map((client) => (
+                                            <tr key={client.id} className="border-b border-gray-100">
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-2">
-                                                        {client.colaborator?.url_profile_cover ? (
+                                                        {client.url_profile_cover ? (
                                                             <img
-                                                                src={client.colaborator.url_profile_cover}
-                                                                alt={client.colaborator.name}
+                                                                src={client.url_profile_cover}
+                                                                alt={client.name}
                                                                 className="w-8 h-8 rounded-full object-cover"
                                                             />
                                                         ) : (
@@ -273,77 +311,126 @@ function ColaboradorDashboard() {
                                                                 <Person className="text-gray-400" />
                                                             </div>
                                                         )}
-                                                        <div className="flex flex-col">
-                                                            <span className="text-gray-700">{client.colaborator?.name}</span>
-                                                            <span className="text-gray-500 text-xs">{client.colaborator?.function}</span>
-                                                        </div>
+                                                        <span className="text-gray-700">{client.name}</span>
                                                     </div>
                                                 </td>
-                                            )}
-                                            <td className="py-3 px-4">
-                                                <button
-                                                    className="text-blue-400 hover:text-blue-300 transition-colors"
-                                                    onClick={() => setSelectedProposal(client)}
-                                                >
-                                                    {user?.function === 'Gerente' ? 'Analisar' : 'Ver detalhes'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex flex-col text-sm">
+                                                        <span className="text-gray-700">{client.phone}</span>
+                                                        <span className="text-gray-500">{client.email}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex gap-1">
+                                                        {progressSteps(client).map((completed, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className={`h-2 w-4 rounded-full ${
+                                                                    completed ? 'bg-green-500' : 'bg-gray-200'
+                                                                }`}
+                                                                title={stepDescriptions[index]}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                {user?.function === 'Gerente' && (
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {client.colaborator?.url_profile_cover ? (
+                                                                <img
+                                                                    src={client.colaborator.url_profile_cover}
+                                                                    alt={client.colaborator.name}
+                                                                    className="w-8 h-8 rounded-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                                    <Person className="text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex flex-col">
+                                                                <span className="text-gray-700">{client.colaborator?.name}</span>
+                                                                <span className="text-gray-500 text-xs">{client.colaborator?.function}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                                                        onClick={() => setSelectedProposal(client)}
+                                                    >
+                                                        {user?.function === 'Gerente' ? 'Analisar' : 'Ver detalhes'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            // Versão cards para colaboradores normais
+                            <ClientsSection
+                                displayedClients={allClients}
+                                progressSteps={(client) => [
+                                    !!client.url_profile_cover,
+                                    !!client.phone,
+                                    !!client.email,
+                                    !!client.simulation,
+                                    client.proposes?.length > 0
+                                ]}
+                                stepDescriptions={[
+                                    'Foto de Perfil',
+                                    'WhatsApp',
+                                    'Email',
+                                    'Simulação',
+                                    'Proposta'
+                                ]}
+                                onClientUpdate={handleClientUpdate}
+                            />
+                        )
                     ) : (
-                        // Versão cards para colaboradores normais
-                        <ClientsSection
-                            displayedClients={allClients}
-                            progressSteps={(client) => [
-                                !!client.url_profile_cover,
-                                !!client.phone,
-                                !!client.email,
-                                !!client.simulation,
-                                client.proposes?.length > 0
-                            ]}
-                            stepDescriptions={[
-                                'Foto de Perfil',
-                                'WhatsApp',
-                                'Email',
-                                'Simulação',
-                                'Proposta'
-                            ]}
-                            onClientUpdate={handleClientUpdate}
-                        />
-                    )
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`${
-                            user?.function === 'Gerente' 
-                            ? 'bg-white shadow-lg' 
-                            : 'bg-white/10 backdrop-blur-sm'
-                        } rounded-xl p-6`}
-                    >
-                        <p className={`text-center ${
-                            user?.function === 'Gerente' ? 'text-gray-600' : 'text-gray-300'
-                        }`}>
-                            Nenhum cliente cadastrado.
-                            <br />
-                            Clique em "Novo Cliente" para começar!
-                        </p>
-                    </motion.div>
-                )}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`${
+                                user?.function === 'Gerente' 
+                                ? 'bg-white shadow-lg' 
+                                : 'bg-white/10 backdrop-blur-sm'
+                            } rounded-xl p-6`}
+                        >
+                            <p className={`text-center ${
+                                user?.function === 'Gerente' ? 'text-gray-600' : 'text-gray-300'
+                            }`}>
+                                Nenhum cliente cadastrado.
+                                <br />
+                                Clique em "Novo Cliente" para começar!
+                            </p>
+                        </motion.div>
+                    )}
+                </motion.div>
             </div>
 
             {/* Seção de Propostas */}
             <section className={`w-full max-w-7xl mx-auto p-4 space-y-6 ${
-                user?.function === 'Gerente' ? 'mt-6' : ''
+                hasAdminPrivileges(user?.function) ? 'mt-6' : ''
             }`}>
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl text-white font-semibold flex items-center gap-2">
-                        <Description />
-                        {user?.function === 'Gerente' ? 'Todas as Propostas' : 'Minhas Propostas'}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsProposalsExpanded(!isProposalsExpanded)}
+                            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                            {isProposalsExpanded ? (
+                                <ExpandLess className="text-white" />
+                            ) : (
+                                <ExpandMore className="text-white" />
+                            )}
+                        </button>
+                        <h2 className="text-xl text-white font-semibold flex items-center gap-2">
+                            <Description />
+                            {hasAdminPrivileges(user?.function) ? 'Todas as Propostas' : 'Minhas Propostas'}
+                        </h2>
+                    </div>
                     <button
                         onClick={() => setIsProposalModalOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] 
@@ -354,66 +441,49 @@ function ColaboradorDashboard() {
                     </button>
                 </div>
 
-                {loadingProposals ? (
-                    <div className="text-center py-8 bg-white rounded-xl shadow-lg">
-                        <p className="text-gray-600">Carregando propostas...</p>
-                    </div>
-                ) : proposals.length > 0 ? (
-                    <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-gray-100 bg-gray-50">
-                                    <th className="py-3 px-4 text-gray-600">Cliente</th>
-                                    <th className="py-3 px-4 text-gray-600">Banco</th>
-                                    <th className="py-3 px-4 text-gray-600">Tipo</th>
-                                    <th className="py-3 px-4 text-gray-600">Data</th>
-                                    <th className="py-3 px-4 text-gray-600">Status</th>
-                                    {user?.function === 'Gerente' && (
-                                        <th className="py-3 px-4 text-gray-600">Responsável</th>
-                                    )}
-                                    <th className="py-3 px-4 text-gray-600">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {proposals.map((proposal) => (
-                                    <tr key={proposal.id} className="border-b border-gray-100">
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-2">
-                                                {proposal.client?.url_profile_cover ? (
-                                                    <img
-                                                        src={proposal.client.url_profile_cover}
-                                                        alt={proposal.client.name}
-                                                        className="w-8 h-8 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                                        <Person className="text-gray-400" />
-                                                    </div>
-                                                )}
-                                                <span className="text-gray-700">{proposal.client?.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4 text-gray-700">{proposal.bank?.name}</td>
-                                        <td className="py-3 px-4 text-gray-700">{proposal.proposalType}</td>
-                                        <td className="py-3 px-4 text-gray-700">
-                                            {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${proposal.isTrueContract
-                                                    ? 'bg-green-500/20 text-green-500'
-                                                    : 'bg-yellow-500/20 text-yellow-500'
-                                                }`}>
-                                                {proposal.isTrueContract ? 'Contrato' : 'Em análise'}
-                                            </span>
-                                        </td>
+                <motion.div
+                    initial={false}
+                    animate={{
+                        height: isProposalsExpanded ? 'auto' : 0,
+                        opacity: isProposalsExpanded ? 1 : 0
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                >
+                    {loadingProposals ? (
+                        <div className="text-center py-8 bg-white rounded-xl shadow-lg">
+                            <p className="text-gray-600">Carregando propostas...</p>
+                        </div>
+                    ) : proposals.length > 0 ? (
+                        <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-gray-100 bg-gray-50">
+                                        <th className="py-3 px-4 text-gray-600">Cliente</th>
+                                        <th className="py-3 px-4 text-gray-600">Banco</th>
+                                        <th className="py-3 px-4 text-gray-600">Tipo</th>
+                                        <th className="py-3 px-4 text-gray-600">Data</th>
+                                        <th className="py-3 px-4 text-gray-600">Status</th>
+                                        <th className="py-3 px-4 text-gray-600">Simulações</th>
+                                        <th className="py-3 px-4 text-gray-600">Chat</th>
                                         {user?.function === 'Gerente' && (
+                                            <th className="py-3 px-4 text-gray-600">Responsável</th>
+                                        )}
+                                        <th className="py-3 px-4 text-gray-600">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {proposals.map((proposal) => (
+                                        <tr key={proposal.id} 
+                                            className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                                        >
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-2">
-                                                    {proposal.Colaborator?.url_profile_cover ? (
+                                                    {proposal.client?.url_profile_cover ? (
                                                         <img
-                                                            src={proposal.Colaborator.url_profile_cover}
-                                                            alt={proposal.Colaborator.name}
-                                                            className="w-8 h-8 rounded-full object-cover"
+                                                            src={proposal.client.url_profile_cover}
+                                                            alt={proposal.client.name}
+                                                            className="w-8 h-8 rounded-full object-cover border-2 border-white/10"
                                                         />
                                                     ) : (
                                                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -421,30 +491,130 @@ function ColaboradorDashboard() {
                                                         </div>
                                                     )}
                                                     <div className="flex flex-col">
-                                                        <span className="text-gray-700">{proposal.Colaborator?.name}</span>
-                                                        <span className="text-gray-500 text-xs">{proposal.Colaborator?.function}</span>
+                                                        <span className="text-gray-700 font-medium">
+                                                            {proposal.client?.name.split(' ')[0]}
+                                                        </span>
+                                                        <span className="text-gray-400 text-xs">
+                                                            {proposal.client?.cpf}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                        )}
-                                        <td className="py-3 px-4">
-                                            <button
-                                                className="text-blue-400 hover:text-blue-300 transition-colors"
-                                                onClick={() => setSelectedProposal(proposal)}
-                                            >
-                                                {user?.function === 'Gerente' ? 'Analisar' : 'Ver detalhes'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="text-center py-8 bg-white rounded-xl shadow-lg">
-                        <p className="text-gray-600">Nenhuma proposta encontrada</p>
-                    </div>
-                )}
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                        <AccountBalance className="text-blue-500 text-xl" />
+                                                    </div>
+                                                    <span className="text-gray-700">{proposal.bank?.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className="px-3 py-1 rounded-full text-xs bg-gray-100">
+                                                    {proposal.proposalType}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-gray-700">
+                                                        {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                    <span className="text-gray-400 text-xs">
+                                                        {new Date(proposal.proposalDate).toLocaleTimeString('pt-BR')}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs ${
+                                                    proposal.isTrueContract
+                                                        ? 'bg-green-500/20 text-green-500'
+                                                        : 'bg-yellow-500/20 text-yellow-500'
+                                                }`}>
+                                                    {proposal.isTrueContract ? 'Contrato' : 'Em análise'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                        <Calculate className="text-purple-500" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-gray-700">
+                                                            {proposal.currentSimulations?.length || 0}
+                                                        </span>
+                                                        {proposal.currentSimulations?.length > 0 && (
+                                                            <span className="text-gray-400 text-xs">
+                                                                Última: {new Date(proposal.currentSimulations[proposal.currentSimulations.length - 1].date)
+                                                                    .toLocaleDateString('pt-BR')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                                        <Chat className="text-orange-500" />
+                                                    </div>
+                                                    <span className="text-gray-700">
+                                                        {proposal.observations?.length || 0}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            {user?.function === 'Gerente' && (
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        {proposal.Colaborator?.url_profile_cover ? (
+                                                            <img
+                                                                src={proposal.Colaborator.url_profile_cover}
+                                                                alt={proposal.Colaborator.name}
+                                                                className="w-8 h-8 rounded-full object-cover border-2 border-white/10"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                                <Person className="text-gray-400" />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex flex-col">
+                                                            <span className="text-gray-700">{proposal.Colaborator?.name}</span>
+                                                            <span className="text-gray-400 text-xs">{proposal.Colaborator?.function}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            )}
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        className="text-blue-500 hover:text-blue-400 transition-colors font-medium"
+                                                        onClick={() => hasAdminPrivileges(user?.function) 
+                                                            ? setSelectedProposal(proposal)
+                                                            : setSelectedProposalForDetails(proposal)
+                                                        }
+                                                    >
+                                                        {hasAdminPrivileges(user?.function) ? 'Analisar' : 'Ver detalhes'}
+                                                    </button>
+
+                                                    {hasAdminPrivileges(user?.function) && (
+                                                        <button
+                                                            onClick={() => setProposalToDelete(proposal)}
+                                                            className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                                                            title="Excluir proposta"
+                                                        >
+                                                            <Delete className="text-xl" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 bg-white rounded-xl shadow-lg">
+                            <p className="text-gray-600">Nenhuma proposta encontrada</p>
+                        </div>
+                    )}
+                </motion.div>
             </section>
 
             <CreateClientModal
@@ -459,7 +629,8 @@ function ColaboradorDashboard() {
                 onSuccess={handleProposalCreated}
             />
 
-            {selectedProposal && user?.function === 'Gerente' && (
+            {/* Modal de Análise */}
+            {selectedProposal && hasAdminPrivileges(user?.function) && (
                 <AnalyzeProposalModal
                     isOpen={!!selectedProposal}
                     onClose={() => setSelectedProposal(null)}
@@ -468,8 +639,25 @@ function ColaboradorDashboard() {
                         getAllColaboratorProposals();
                         setSelectedProposal(null);
                     }}
+                    onMessageSent={() => handleProposalUpdate(selectedProposal.id)}
                 />
             )}
+
+            {/* Modal de Detalhes */}
+            <ProposalDetails
+                isOpen={!!selectedProposalForDetails}
+                onClose={() => setSelectedProposalForDetails(null)}
+                proposal={selectedProposalForDetails}
+                onMessageSent={() => selectedProposalForDetails && handleProposalUpdate(selectedProposalForDetails.id)}
+            />
+
+            {/* Modal de confirmação de exclusão */}
+            <DeleteConfirmationModal
+                isOpen={!!proposalToDelete}
+                onClose={() => setProposalToDelete(null)}
+                onConfirm={() => handleDeleteProposal(proposalToDelete?.id)}
+                itemName="proposta"
+            />
         </div>
     );
 }

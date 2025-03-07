@@ -1,17 +1,14 @@
-import { Person, ExitToApp, Calculate, EmojiEvents } from '@mui/icons-material';
+import { EmojiEvents } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { toast } from '../../../../Common/Toast/Toast';
 import logoAngelCor from "../../../../../medias/logos/angelcor_logo.png";
 import XpSystem from '../../../XP/XpLevels';
 import { useEffect, useState } from 'react';
-import SimulatorModal from '../../../../angel_simulator/SimulatorModal';
-import { Refresh, Logout } from '@mui/icons-material';
+import { Logout } from '@mui/icons-material';
 
 function ColaboratorNavbar({ user }) {
     const navigate = useNavigate();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
     const [levelInfo, setLevelInfo] = useState(null);
 
     useEffect(() => {
@@ -29,22 +26,22 @@ function ColaboratorNavbar({ user }) {
     // Cálculo da porcentagem de progresso usando o XpSystem
     const calculateProgress = () => {
         if (!levelInfo) return 0;
-        
+
         // Pega o XP atual e o XP necessário para o próximo nível
         const { currentXp, nextLevelXp, level } = levelInfo;
-        
+
         // Pega o XP necessário para o nível atual
         const currentLevelXp = XpSystem.levels[`level${level}`];
-        
+
         // Calcula quanto XP já foi obtido neste nível
         const xpInCurrentLevel = currentXp - currentLevelXp;
-        
+
         // Calcula quanto XP é necessário para passar de nível
         const xpNeededForNextLevel = nextLevelXp - currentLevelXp;
-        
+
         // Calcula a porcentagem
         const progress = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
-        
+
         return Math.min(100, Math.max(0, progress));
     };
 
@@ -52,9 +49,9 @@ function ColaboratorNavbar({ user }) {
         <>
             <div className="w-full">
                 <nav className={`w-full relative ${isGerente
-                    ? 'bg-white shadow-lg' 
+                    ? 'bg-white shadow-lg'
                     : 'bg-white/10 backdrop-blur-sm border-b border-white/10'
-                }`}>
+                    }`}>
                     <div className="max-w-7xl mx-auto px-4 py-3">
                         <div className="flex items-center justify-between">
                             {/* Lado Esquerdo - Logo e Nome */}
@@ -99,8 +96,8 @@ function ColaboratorNavbar({ user }) {
                                 <button
                                     onClick={() => setShowLogoutConfirm(true)}
                                     className={`p-2 rounded-lg transition-colors ${isGerente
-                                            ? 'text-gray-600 hover:bg-gray-100'
-                                            : 'text-gray-300 hover:bg-white/5'
+                                        ? 'text-gray-600 hover:bg-gray-100'
+                                        : 'text-gray-300 hover:bg-white/5'
                                         }`}
                                     title="Sair"
                                 >
@@ -137,8 +134,8 @@ function ColaboratorNavbar({ user }) {
                         initial={{ scale: 0.95 }}
                         animate={{ scale: 1 }}
                         className={`${isGerente
-                                ? 'bg-white'
-                                : 'bg-[#1f1f1f] border border-white/10'
+                            ? 'bg-white'
+                            : 'bg-[#1f1f1f] border border-white/10'
                             } rounded-xl p-6 w-full max-w-sm`}
                     >
                         <h3 className={`text-xl font-bold mb-4 ${isGerente ? 'text-gray-800' : 'text-white'
@@ -152,8 +149,8 @@ function ColaboratorNavbar({ user }) {
                             <button
                                 onClick={() => setShowLogoutConfirm(false)}
                                 className={`px-4 py-2 rounded-lg transition-colors ${isGerente
-                                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                                        : 'bg-white/5 hover:bg-white/10 text-white'
+                                    ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                    : 'bg-white/5 hover:bg-white/10 text-white'
                                     }`}
                             >
                                 Cancelar
@@ -170,11 +167,6 @@ function ColaboratorNavbar({ user }) {
                 </motion.div>
             )}
 
-            {/* Modal do Simulador */}
-            <SimulatorModal
-                isOpen={isSimulatorOpen}
-                onClose={() => setIsSimulatorOpen(false)}
-            />
         </>
     );
 }

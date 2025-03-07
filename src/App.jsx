@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import SimulatorMain from './components/angel_simulator/SimulatorMain.jsx';
 import TriunfoHome from './components/home/TriunfoHome.jsx';
 import AdminDashboard from './components/Plataform/Admin/AdminDashboard.jsx';
 import AdminLogin from './components/Plataform/Admin/AdminLogin.jsx';
@@ -11,7 +10,7 @@ import ColaboradorDashboard from './components/Plataform/colaborators/dashboard/
 import DashboardClient from './components/Plataform/Client/DashboardClient.jsx';
 import ClientLogin from './components/Plataform/Client/components/ClientLogin.jsx';
 import ToastContainer from './components/Common/Toast/Toast';
-import SimulatorModal from './components/angel_simulator/SimulatorModal';
+
 
 // Componente de rota protegida
 const ProtectedRoute = ({ children }) => {

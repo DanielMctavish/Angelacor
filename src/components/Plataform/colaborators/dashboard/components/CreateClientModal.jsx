@@ -126,9 +126,12 @@ function CreateClientModal({ isOpen, onClose, onSuccess }) {
             newErrors.email = 'Email inválido';
         }
 
-        // Validação de CPF (básica)
-        if (formData.cpf && formData.cpf.length !== 11) {
-            newErrors.cpf = 'CPF inválido';
+        // Validação de CPF
+        if (formData.cpf) {
+            const cpfLimpo = formData.cpf.replace(/\D/g, '');
+            if (!validateCPF(cpfLimpo)) {
+                newErrors.cpf = 'CPF inválido';
+            }
         }
 
         setErrors(newErrors);

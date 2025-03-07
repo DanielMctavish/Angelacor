@@ -1,0 +1,552 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Close, Person, AccountBalance, Description, AttachMoney, Calculate, Send } from '@mui/icons-material';
+import axios from 'axios';
+import { toast } from '../../../Common/Toast/Toast';
+
+function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessageSent }) {
+    const [proposal, setProposal] = useState(initialProposal);
+    const [simulationData, setSimulationData] = useState({
+        parcela: '',
+        taxa: '',
+        prazoRestante: ''
+    });
+    const [observations, setObservations] = useState([]);
+    const [newObservation, setNewObservation] = useState('');
+    const [sendingMessage, setSendingMessage] = useState(false);
+
+    // Atualiza o estado local quando a prop muda
+    useEffect(() => {
+        setProposal(initialProposal);
+        
+        // Pré-preenche os campos da simulação com os dados da proposta
+        if (initialProposal) {
+            const parcelaAtual = (initialProposal.contractValue / initialProposal.contractInstallments).toFixed(2);
+            setSimulationData({
+                parcela: parcelaAtual.toString(),
+                taxa: initialProposal.contractInterestRate?.toString() || '',
+                prazoRestante: initialProposal.contractRemainingInstallments?.toString() || ''
+            });
+        }
+
+        if (initialProposal?.observations) {
+            // Garantir que não há duplicatas usando o createdAt como identificador único
+            const uniqueObservations = initialProposal.observations.filter((obs, index, self) =>
+                index === self.findIndex((o) => o.createdAt === obs.createdAt)
+            );
+            setObservations(uniqueObservations);
+        }
+    }, [initialProposal]);
+
+    // Função para calcular o saldo devedor
+    const calcularSaldoDevedorVP = (parcela, taxa, prazoRestante) => {
+        if (!parcela || !taxa || !prazoRestante) return 0;
+        const saldoDevedor = parcela * ((1 - Math.pow(1 + taxa, -prazoRestante)) / taxa);
+        return saldoDevedor;
+    };
+
+    // Calcula o resultado em tempo real
+    const calculateSimulationResult = () => {
+        const parcela = parseFloat(simulationData.parcela) || 0;
+        const taxa = parseFloat(simulationData.taxa) / 100 || 0;
+        const prazoRestante = parseInt(simulationData.prazoRestante) || 0;
+
+        if (parcela && taxa && prazoRestante) {
+            const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
+            return {
+                saldoDevedor,
+                valorTotal: parcela * prazoRestante,
+                economiaTotal: (parcela * prazoRestante) - saldoDevedor
+            };
+        }
+        return null;
+    };
+
+    // Handler para campos da simulação
+    const handleSimulationChange = (e) => {
+        const { name, value } = e.target;
+        setSimulationData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Função para salvar a simulação
+    const handleSaveSimulation = async () => {
+        try {
+            const saldoDevedor = calcularSaldoDevedorVP(
+                parseFloat(simulationData.parcela),
+                parseFloat(simulationData.taxa) / 100,
+                parseInt(simulationData.prazoRestante)
+            );
+
+            const simulationResult = {
+                ...simulationData,
+                saldoDevedor,
+                date: new Date().toISOString()
+            };
+
+            const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
+            
+            const updatedSimulations = [
+                ...(proposal.currentSimulations || []),
+                simulationResult
+            ];
+
+            await axios.patch(
+                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
+                {
+                    currentSimulations: updatedSimulations
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${colaboratorData.token}`
+                    }
+                }
+            );
+
+            // Atualiza o estado local com a nova simulação
+            setProposal(prev => ({
+                ...prev,
+                currentSimulations: updatedSimulations
+            }));
+
+            toast.success('Simulação salva com sucesso!');
+            
+            // Limpar campos após salvar
+            setSimulationData({
+                parcela: '',
+                taxa: '',
+                prazoRestante: ''
+            });
+
+        } catch (error) {
+            console.error('Erro ao salvar simulação:', error);
+            toast.error('Erro ao salvar simulação');
+        }
+    };
+
+    const formatRelativeTime = (date) => {
+        const now = new Date();
+        const diff = now - new Date(date);
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (minutes < 1) return 'agora mesmo';
+        if (minutes < 60) return `há ${minutes} minutos`;
+        if (hours < 24) return `há ${hours} horas`;
+        if (days === 1) return 'há 1 dia';
+        if (days < 7) return `há ${days} dias`;
+        
+        return new Date(date).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const handleAddObservation = async () => {
+        if (!newObservation.trim() || sendingMessage) return;
+
+        setSendingMessage(true);
+        try {
+            const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
+            
+            // Enviar apenas a nova observação
+            await axios.patch(
+                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
+                {
+                    observations: [{
+                        observation: newObservation.trim(),
+                        colaboratorId: colaboratorData.user.id
+                    }]
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${colaboratorData.token}`
+                    }
+                }
+            );
+
+            // Atualizar estado local
+            const newObservationData = {
+                colaborator: colaboratorData.user,
+                colaboratorId: colaboratorData.user.id,
+                observation: newObservation.trim(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            setObservations(prev => [...prev, newObservationData]);
+            setNewObservation('');
+            
+            toast.success('Mensagem enviada!');
+            onMessageSent?.();
+        } catch (error) {
+            console.error('Erro ao enviar mensagem:', error);
+            toast.error('Erro ao enviar mensagem');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    if (!isOpen || !proposal) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 p-5"
+        >
+            <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                className="bg-[#1f1f1f] rounded-xl p-6 w-full h-full overflow-y-auto flex flex-col"
+            >
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white">Detalhes da Proposta</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white transition-colors"
+                    >
+                        <Close />
+                    </button>
+                </div>
+
+                <div className="flex gap-6 flex-1">
+                    {/* Área 1: Informações da Proposta */}
+                    <div className="w-1/2 space-y-6">
+                        {/* Informações do Cliente */}
+                        <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <Person />
+                                <h3 className="text-lg font-medium">Dados do Cliente</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="text-gray-400 text-sm">Nome:</span>
+                                    <p className="text-white">{proposal.Client?.name}</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">CPF:</span>
+                                    <p className="text-white">{proposal.Client?.cpf}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Informações da Proposta */}
+                        <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <Description />
+                                <h3 className="text-lg font-medium">Dados da Proposta</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="text-gray-400 text-sm">Tipo:</span>
+                                    <p className="text-white">{proposal.proposalType}</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Data:</span>
+                                    <p className="text-white">
+                                        {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
+                                    </p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Empresa/Loja:</span>
+                                    <p className="text-white">{proposal.storeCompany}</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Convênio:</span>
+                                    <p className="text-white">{proposal.agreement}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Informações Financeiras */}
+                        <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <AttachMoney />
+                                <h3 className="text-lg font-medium">Dados Financeiros</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="text-gray-400 text-sm">Valor do Contrato:</span>
+                                    <p className="text-white">
+                                        {parseFloat(proposal.contractValue).toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                        })}
+                                    </p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Parcelas:</span>
+                                    <p className="text-white">{proposal.contractInstallments}x</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Taxa de Juros:</span>
+                                    <p className="text-white">{proposal.contractInterestRate}% a.m.</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Parcelas Restantes:</span>
+                                    <p className="text-white">{proposal.contractRemainingInstallments || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Valor da Parcela:</span>
+                                    <p className="text-green-400 font-medium">
+                                        {(proposal.contractValue / proposal.contractInstallments).toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                        })}
+                                    </p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-sm">Status:</span>
+                                    <p className={`${proposal.isTrueContract ? 'text-green-400' : 'text-yellow-400'}`}>
+                                        {proposal.isTrueContract ? 'Contrato' : 'Em análise'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Conteúdo da Proposta */}
+                        {proposal.proposalContent && (
+                            <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                                <div className="flex items-center gap-2 text-gray-400">
+                                    <Description />
+                                    <h3 className="text-lg font-medium">Conteúdo da Proposta</h3>
+                                </div>
+                                <p className="text-white whitespace-pre-wrap">{proposal.proposalContent}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Área 2: Simulação */}
+                    <div className="w-1/2 space-y-6">
+                        <div className="bg-white/5 p-4 rounded-lg space-y-4">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <Calculate />
+                                <h3 className="text-lg font-medium">Simulação de Refinanciamento</h3>
+                            </div>
+
+                            {/* Display do Resultado em Tempo Real */}
+                            {calculateSimulationResult() && (
+                                <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
+                                    <div className="text-center">
+                                        <span className="text-xs text-gray-400 block mb-1">
+                                            Valor Total
+                                        </span>
+                                        <span className="text-white font-medium">
+                                            {calculateSimulationResult().valorTotal.toLocaleString('pt-BR', {
+                                                style: 'currency',
+                                                currency: 'BRL'
+                                            })}
+                                        </span>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-xs text-gray-400 block mb-1">
+                                            Saldo Devedor
+                                        </span>
+                                        <span className="text-green-400 font-medium">
+                                            {calculateSimulationResult().saldoDevedor.toLocaleString('pt-BR', {
+                                                style: 'currency',
+                                                currency: 'BRL'
+                                            })}
+                                        </span>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-xs text-gray-400 block mb-1">
+                                            Economia
+                                        </span>
+                                        <span className="text-yellow-400 font-medium">
+                                            {calculateSimulationResult().economiaTotal.toLocaleString('pt-BR', {
+                                                style: 'currency',
+                                                currency: 'BRL'
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm text-gray-400 block mb-1">
+                                        Valor da Parcela
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                            R$
+                                        </span>
+                                        <input
+                                            type="text"
+                                            name="parcela"
+                                            value={simulationData.parcela}
+                                            onChange={handleSimulationChange}
+                                            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm text-gray-400 block mb-1">
+                                        Taxa de Juros (% a.m.)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="taxa"
+                                        value={simulationData.taxa}
+                                        onChange={handleSimulationChange}
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                        placeholder="0,00"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm text-gray-400 block mb-1">
+                                        Prazo Restante
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="prazoRestante"
+                                        value={simulationData.prazoRestante}
+                                        onChange={handleSimulationChange}
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                        placeholder="Número de parcelas"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSaveSimulation}
+                                disabled={!calculateSimulationResult()}
+                                className="w-full px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg 
+                                    transition-colors text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Simular e Salvar
+                            </button>
+                        </div>
+
+                        {/* Lista de Simulações */}
+                        {proposal.currentSimulations?.length > 0 && (
+                            <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                                <h3 className="text-lg font-medium text-gray-400">Simulações Anteriores</h3>
+                                <div className="space-y-2">
+                                    {proposal.currentSimulations.map((sim, index) => (
+                                        <div key={index} className="bg-white/5 p-3 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div>
+                                                    <span className="text-gray-400">Parcela: </span>
+                                                    <span className="text-white">
+                                                        {parseFloat(sim.parcela).toLocaleString('pt-BR', {
+                                                            style: 'currency',
+                                                            currency: 'BRL'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400">Saldo Devedor: </span>
+                                                    <span className="text-green-400">
+                                                        {parseFloat(sim.saldoDevedor).toLocaleString('pt-BR', {
+                                                            style: 'currency',
+                                                            currency: 'BRL'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400">Taxa: </span>
+                                                    <span className="text-white">{sim.taxa}% a.m.</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400">Prazo: </span>
+                                                    <span className="text-white">{sim.prazoRestante} meses</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {new Date(sim.date).toLocaleString('pt-BR')}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Seção de Observações/Chat */}
+                <div className="bg-white/5 rounded-lg p-6 mt-8">
+                    <h3 className="text-lg font-semibold text-[#e67f00] mb-4">Observações</h3>
+                    
+                    {/* Lista de Observações */}
+                    <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        {observations.map((obs, index) => (
+                            <div key={index} className="bg-white/5 p-4 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    {obs.colaborator?.url_profile_cover ? (
+                                        <img
+                                            src={obs.colaborator.url_profile_cover}
+                                            alt={obs.colaborator.name}
+                                            className="w-8 h-8 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                                            <Person className="text-gray-400 text-sm" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <span className="text-white text-sm font-medium">
+                                                    {obs.colaborator?.name}
+                                                </span>
+                                                <span className="text-gray-400 text-xs ml-2">
+                                                    {obs.colaborator?.function}
+                                                </span>
+                                            </div>
+                                            <span className="text-gray-400 text-xs">
+                                                {formatRelativeTime(obs.createdAt)}
+                                            </span>
+                                        </div>
+                                        <p className="text-gray-300 mt-1 text-sm">
+                                            {obs.observation}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Input para Nova Observação */}
+                    <div className="flex gap-2 bg-white/5 rounded-lg p-2">
+                        <input
+                            type="text"
+                            value={newObservation}
+                            onChange={(e) => setNewObservation(e.target.value)}
+                            placeholder="Digite uma mensagem..."
+                            className="flex-1 bg-transparent border-none outline-none text-white text-sm"
+                            disabled={sendingMessage}
+                        />
+                        <button
+                            onClick={handleAddObservation}
+                            disabled={!newObservation.trim() || sendingMessage}
+                            className="p-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg 
+                                transition-colors text-white disabled:opacity-50 
+                                disabled:cursor-not-allowed min-w-[40px] h-[40px] flex items-center justify-center"
+                        >
+                            {sendingMessage ? (
+                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Send className="text-xl" />
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+export default ProposalDetails;

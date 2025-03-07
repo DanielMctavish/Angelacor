@@ -16,6 +16,10 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
         storeCompany: '',
         agreement: '',
         proposalContent: '',
+        contractValue: '',
+        contractInstallments: '',
+        contractInterestRate: '',
+        contractRemainingInstallments: '',
         isTrueContract: false
     });
 
@@ -26,17 +30,26 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
         }
     }, [isOpen]);
 
+    // Função auxiliar para verificar se o usuário tem privilégios administrativos
+    const hasAdminPrivileges = (userFunction) => {
+        return userFunction === 'Gerente' || userFunction === 'Sub Administrador';
+    };
+
     const loadClients = async () => {
         try {
             const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_URL}/client/find-all?colaboratorId=${colaboratorData.user.id}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${colaboratorData.token}`
-                    }
+            
+            // Define a URL baseada no tipo de usuário
+            const url = hasAdminPrivileges(colaboratorData.user.function)
+                ? `${import.meta.env.VITE_API_URL}/client/find-all`
+                : `${import.meta.env.VITE_API_URL}/client/find-all?colaboratorId=${colaboratorData.user.id}`;
+
+            const response = await axios.get(url, {
+                headers: {
+                    'Authorization': `Bearer ${colaboratorData.token}`
                 }
-            );
+            });
+
             setClients(response.data);
         } catch (error) {
             console.error('Erro ao carregar clientes:', error);
@@ -62,6 +75,45 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
         }
     };
 
+    // Handler para campos numéricos com formatação de moeda
+    const handleCurrencyChange = (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        value = (parseFloat(value) / 100).toFixed(2);
+        setFormData(prev => ({
+            ...prev,
+            [e.target.name]: value
+        }));
+    };
+
+    // Handler para campos numéricos
+    const handleNumberChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '');
+        setFormData(prev => ({
+            ...prev,
+            [e.target.name]: value
+        }));
+    };
+
+    // Função para calcular o valor da parcela
+    const calculateInstallmentValue = () => {
+        const value = parseFloat(formData.contractValue) || 0;
+        const installments = parseInt(formData.contractInstallments) || 1;
+        const interestRate = parseFloat(formData.contractInterestRate) || 0;
+
+        // Cálculo com juros compostos
+        if (value && installments) {
+            const rate = interestRate / 100; // Convertendo taxa para decimal, ao invés de ser 0.01, é 1%
+            if (rate > 0) {
+                const installmentValue = value * (rate * Math.pow(1 + rate, installments)) / (Math.pow(1 + rate, installments) - 1);
+                return installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            } else {
+                const installmentValue = value / installments;
+                return installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+        }
+        return 'R$ 0,00';
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -71,6 +123,10 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
             
             const proposalData = {
                 ...formData,
+                contractValue: parseFloat(formData.contractValue || 0),
+                contractInstallments: parseInt(formData.contractInstallments || 0),
+                contractInterestRate: parseFloat(formData.contractInterestRate || 0),
+                contractRemainingInstallments: parseInt(formData.contractRemainingInstallments || 0),
                 colaboratorId: colaboratorData.user.id,
                 proposalDate: new Date().toISOString(),
                 isTrueContract: false
@@ -160,12 +216,13 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 
+            flex items-center justify-center p-4"
         >
             <motion.div
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
-                className="bg-[#1f1f1f] rounded-xl p-6 w-full max-w-2xl"
+                className="bg-[#1f1f1f] rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">Nova Proposta</h2>
@@ -181,7 +238,9 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
                     {/* Seleção de Cliente */}
                     <div>
                         <label className="text-sm text-gray-400 block mb-2">
-                            Selecione o Cliente
+                            {hasAdminPrivileges(JSON.parse(localStorage.getItem('colaboratorData'))?.user?.function)
+                                ? 'Selecione o Cliente (Todos os Clientes)'
+                                : 'Selecione o Cliente'}
                         </label>
                         <div className="relative">
                             <Person className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -195,6 +254,9 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
                                 {clients.map(client => (
                                     <option key={client.id} value={client.id}>
                                         {client.name} - CPF: {client.cpf}
+                                        {client.colaborator && hasAdminPrivileges(JSON.parse(localStorage.getItem('colaboratorData'))?.user?.function)
+                                            ? ` - Responsável: ${client.colaborator.name}`
+                                            : ''}
                                     </option>
                                 ))}
                             </select>
@@ -280,6 +342,98 @@ function CreateNewProposal({ isOpen, onClose, onSuccess }) {
                             className="w-full p-2 bg-white/5 border border-white/10 rounded-lg text-white h-32"
                             placeholder="Detalhes da proposta..."
                         />
+                    </div>
+
+                    {/* Seção de Valores do Contrato */}
+                    <div className="bg-white/5 p-4 rounded-lg space-y-4">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm text-gray-400 font-medium">
+                                Valores do Contrato
+                            </label>
+                            {(formData.contractValue && formData.contractInstallments) && (
+                                <div className="text-sm">
+                                    <span className="text-gray-400">Valor da Parcela: </span>
+                                    <span className="text-green-400 font-medium">
+                                        {calculateInstallmentValue()}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Valor do Contrato */}
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">
+                                    Valor do Contrato <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                        R$
+                                    </span>
+                                    <input
+                                        type="text"
+                                        name="contractValue"
+                                        value={formData.contractValue}
+                                        onChange={handleCurrencyChange}
+                                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+                                        placeholder="0,00"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Número de Parcelas */}
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">
+                                    Número de Parcelas <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="contractInstallments"
+                                    value={formData.contractInstallments}
+                                    onChange={handleNumberChange}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+                                    placeholder="Ex: 48"
+                                    required
+                                />
+                            </div>
+
+                            {/* Taxa de Juros */}
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">
+                                    Taxa de Juros <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="contractInterestRate"
+                                        value={formData.contractInterestRate}
+                                        onChange={handleCurrencyChange}
+                                        className="w-full pr-8 pl-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+                                        placeholder="0,00"
+                                        required
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                                        %
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Parcelas Restantes */}
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">
+                                    Parcelas Restantes
+                                </label>
+                                <input
+                                    type="text"
+                                    name="contractRemainingInstallments"
+                                    value={formData.contractRemainingInstallments}
+                                    onChange={handleNumberChange}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+                                    placeholder="Ex: 36"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex justify-end gap-3">
