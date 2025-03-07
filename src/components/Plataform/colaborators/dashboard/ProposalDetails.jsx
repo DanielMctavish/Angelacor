@@ -6,11 +6,20 @@ import { toast } from '../../../Common/Toast/Toast';
 
 function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessageSent }) {
     const [proposal, setProposal] = useState(initialProposal);
+    const [saldoDevedorDisplay, setSaldoDevedorDisplay] = useState('');
+    const [valorTotalDisplay, setValorTotalDisplay] = useState('');
+    const [economiaTotalDisplay, setEconomiaTotalDisplay] = useState('');
     const [simulationData, setSimulationData] = useState({
         parcela: '',
         taxa: '',
         prazoRestante: ''
     });
+    const [newSimulation, setNewSimulation] = useState({
+        margem: '',
+        novaTaxa: '',
+        novoPrazo: ''
+    });
+    const [resultBruto, setResultBruto] = useState('');
     const [observations, setObservations] = useState([]);
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
@@ -18,57 +27,73 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
     // Atualiza o estado local quando a prop muda
     useEffect(() => {
         setProposal(initialProposal);
-        
-        // Pré-preenche os campos da simulação com os dados da proposta
         if (initialProposal) {
             const parcelaAtual = (initialProposal.contractValue / initialProposal.contractInstallments).toFixed(2);
             setSimulationData({
-                parcela: parcelaAtual.toString(),
+                parcela: parcelaAtual,
                 taxa: initialProposal.contractInterestRate?.toString() || '',
                 prazoRestante: initialProposal.contractRemainingInstallments?.toString() || ''
             });
         }
-
         if (initialProposal?.observations) {
-            // Garantir que não há duplicatas usando o createdAt como identificador único
-            const uniqueObservations = initialProposal.observations.filter((obs, index, self) =>
-                index === self.findIndex((o) => o.createdAt === obs.createdAt)
+            const uniqueObservations = initialProposal.observations.filter(
+                (obs, index, self) => index === self.findIndex((o) => o.createdAt === obs.createdAt)
             );
             setObservations(uniqueObservations);
         }
     }, [initialProposal]);
 
-    // Função para calcular o saldo devedor
-    const calcularSaldoDevedorVP = (parcela, taxa, prazoRestante) => {
-        if (!parcela || !taxa || !prazoRestante) return 0;
-        const saldoDevedor = parcela * ((1 - Math.pow(1 + taxa, -prazoRestante)) / taxa);
-        return saldoDevedor;
-    };
-
-    // Calcula o resultado em tempo real
-    const calculateSimulationResult = () => {
+    // Calcula o resultado da simulação em tempo real quando simulationData muda
+    useEffect(() => {
         const parcela = parseFloat(simulationData.parcela) || 0;
         const taxa = parseFloat(simulationData.taxa) / 100 || 0;
         const prazoRestante = parseInt(simulationData.prazoRestante) || 0;
 
         if (parcela && taxa && prazoRestante) {
             const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
-            return {
-                saldoDevedor,
-                valorTotal: parcela * prazoRestante,
-                economiaTotal: (parcela * prazoRestante) - saldoDevedor
-            };
+            const valorTotal = parcela * prazoRestante;
+            const economiaTotal = valorTotal - saldoDevedor;
+
+            setSaldoDevedorDisplay(saldoDevedor.toFixed(2));
+            setValorTotalDisplay(valorTotal.toFixed(2));
+            setEconomiaTotalDisplay(economiaTotal.toFixed(2));
+        } else {
+            setSaldoDevedorDisplay('');
+            setValorTotalDisplay('');
+            setEconomiaTotalDisplay('');
         }
-        return null;
+    }, [simulationData]);
+
+    // Função para calcular o saldo devedor
+    const calcularSaldoDevedorVP = (parcela, taxa, prazoRestante) => {
+        if (!parcela || !taxa || !prazoRestante) return 0;
+        return parcela * ((1 - Math.pow(1 + taxa, -prazoRestante)) / taxa);
     };
 
-    // Handler para campos da simulação
+    const calcContratoBruto = () => {
+        const parcelaBase = parseFloat(simulationData.parcela) || 0;
+        const margem = parseFloat(newSimulation.margem) || 0;
+        const novaTaxa = parseFloat(newSimulation.novaTaxa) / 100 || 0;
+        const novoPrazo = parseInt(newSimulation.novoPrazo) || 0;
+
+        const result = calcularSaldoDevedorVP(parcelaBase + margem, novaTaxa, novoPrazo);
+        
+        const currentSaldoDevedor = calcularSaldoDevedorVP(simulationData.parcela, (simulationData.taxa / 100), simulationData.prazoRestante)
+        const IOF = (result - currentSaldoDevedor) * (6.5 / 100)
+        
+        setResultBruto((result - currentSaldoDevedor) - IOF);
+    };
+
+    // Handle changes nos campos de simulação
     const handleSimulationChange = (e) => {
         const { name, value } = e.target;
-        setSimulationData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setSimulationData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    // Handle changes nos campos de nova simulação
+    const handleNewSimulationChange = (e) => {
+        const { name, value } = e.target;
+        setNewSimulation((prev) => ({ ...prev, [name]: value }));
     };
 
     // Função para salvar a simulação
@@ -87,102 +112,49 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
             };
 
             const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
-            
-            const updatedSimulations = [
-                ...(proposal.currentSimulations || []),
-                simulationResult
-            ];
+            const updatedSimulations = [...(proposal.currentSimulations || []), simulationResult];
 
             await axios.patch(
                 `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
-                {
-                    currentSimulations: updatedSimulations
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${colaboratorData.token}`
-                    }
-                }
+                { currentSimulations: updatedSimulations },
+                { headers: { 'Authorization': `Bearer ${colaboratorData.token}` } }
             );
 
-            // Atualiza o estado local com a nova simulação
-            setProposal(prev => ({
-                ...prev,
-                currentSimulations: updatedSimulations
-            }));
-
+            setProposal((prev) => ({ ...prev, currentSimulations: updatedSimulations }));
             toast.success('Simulação salva com sucesso!');
-            
-            // Limpar campos após salvar
-            setSimulationData({
-                parcela: '',
-                taxa: '',
-                prazoRestante: ''
-            });
-
+            setSimulationData({ parcela: '', taxa: '', prazoRestante: '' });
         } catch (error) {
             console.error('Erro ao salvar simulação:', error);
             toast.error('Erro ao salvar simulação');
         }
     };
 
-    const formatRelativeTime = (date) => {
-        const now = new Date();
-        const diff = now - new Date(date);
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (minutes < 1) return 'agora mesmo';
-        if (minutes < 60) return `há ${minutes} minutos`;
-        if (hours < 24) return `há ${hours} horas`;
-        if (days === 1) return 'há 1 dia';
-        if (days < 7) return `há ${days} dias`;
-        
-        return new Date(date).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
+    // Função para adicionar observação
     const handleAddObservation = async () => {
         if (!newObservation.trim() || sendingMessage) return;
-
         setSendingMessage(true);
         try {
             const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
-            
-            // Enviar apenas a nova observação
+            const newObservationData = {
+                observation: newObservation.trim(),
+                colaboratorId: colaboratorData.user.id
+            };
+
             await axios.patch(
                 `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
-                {
-                    observations: [{
-                        observation: newObservation.trim(),
-                        colaboratorId: colaboratorData.user.id
-                    }]
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${colaboratorData.token}`
-                    }
-                }
+                { observations: [newObservationData] },
+                { headers: { 'Authorization': `Bearer ${colaboratorData.token}` } }
             );
 
-            // Atualizar estado local
-            const newObservationData = {
+            const observationWithMetadata = {
+                ...newObservationData,
                 colaborator: colaboratorData.user,
-                colaboratorId: colaboratorData.user.id,
-                observation: newObservation.trim(),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            setObservations(prev => [...prev, newObservationData]);
+            setObservations((prev) => [...prev, observationWithMetadata]);
             setNewObservation('');
-            
             toast.success('Mensagem enviada!');
             onMessageSent?.();
         } catch (error) {
@@ -191,6 +163,21 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
         } finally {
             setSendingMessage(false);
         }
+    };
+
+    // Formata o tempo relativo
+    const formatRelativeTime = (date) => {
+        const now = new Date();
+        const diff = now - new Date(date);
+        const minutes = Math.floor(diff / 60000);
+        if (minutes < 1) return 'agora mesmo';
+        if (minutes < 60) return `há ${minutes} minutos`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `há ${hours} horas`;
+        const days = Math.floor(hours / 24);
+        if (days === 1) return 'há 1 dia';
+        if (days < 7) return `há ${days} dias`;
+        return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
 
     if (!isOpen || !proposal) return null;
@@ -209,10 +196,7 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">Detalhes da Proposta</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors"
-                    >
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <Close />
                     </button>
                 </div>
@@ -333,36 +317,30 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                             </div>
 
                             {/* Display do Resultado em Tempo Real */}
-                            {calculateSimulationResult() && (
+                            {(saldoDevedorDisplay || valorTotalDisplay || economiaTotalDisplay) && (
                                 <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
                                     <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">
-                                            Valor Total
-                                        </span>
+                                        <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
                                         <span className="text-white font-medium">
-                                            {calculateSimulationResult().valorTotal.toLocaleString('pt-BR', {
+                                            {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
                                             })}
                                         </span>
                                     </div>
                                     <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">
-                                            Saldo Devedor
-                                        </span>
+                                        <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
                                         <span className="text-green-400 font-medium">
-                                            {calculateSimulationResult().saldoDevedor.toLocaleString('pt-BR', {
+                                            {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
                                             })}
                                         </span>
                                     </div>
                                     <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">
-                                            Economia
-                                        </span>
+                                        <span className="text-xs text-gray-400 block mb-1">Economia</span>
                                         <span className="text-yellow-400 font-medium">
-                                            {calculateSimulationResult().economiaTotal.toLocaleString('pt-BR', {
+                                            {parseFloat(economiaTotalDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
                                             })}
@@ -373,13 +351,9 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm text-gray-400 block mb-1">
-                                        Valor da Parcela
-                                    </label>
+                                    <label className="text-sm text-gray-400 block mb-1">Valor da Parcela</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                            R$
-                                        </span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
                                         <input
                                             type="text"
                                             name="parcela"
@@ -390,11 +364,8 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                         />
                                     </div>
                                 </div>
-
                                 <div>
-                                    <label className="text-sm text-gray-400 block mb-1">
-                                        Taxa de Juros (% a.m.)
-                                    </label>
+                                    <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (% a.m.)</label>
                                     <input
                                         type="text"
                                         name="taxa"
@@ -404,11 +375,8 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                         placeholder="0,00"
                                     />
                                 </div>
-
                                 <div>
-                                    <label className="text-sm text-gray-400 block mb-1">
-                                        Prazo Restante
-                                    </label>
+                                    <label className="text-sm text-gray-400 block mb-1">Prazo Restante</label>
                                     <input
                                         type="number"
                                         name="prazoRestante"
@@ -418,13 +386,56 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                         placeholder="Número de parcelas"
                                     />
                                 </div>
+                                <div className="bg-[#1a1a1a] p-2 rounded-lg flex flex-col gap-2 w-full">
+                                    <span className="text-[#fff] bg-red-700 p-3">
+                                        {resultBruto ? parseFloat(resultBruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A'}
+                                    </span>
+                                    <div>
+                                        <label className="text-sm text-gray-400 block mb-1">Prazo Atual</label>
+                                        <input
+                                            type="number"
+                                            name="novoPrazo"
+                                            value={newSimulation.novoPrazo}
+                                            onChange={handleNewSimulationChange}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                            placeholder="Número inteiro"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (atual)</label>
+                                        <input
+                                            type="number"
+                                            name="novaTaxa"
+                                            value={newSimulation.novaTaxa}
+                                            onChange={handleNewSimulationChange}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                            placeholder="Porcentagem"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-gray-400 block mb-1">Margem do Cliente</label>
+                                        <input
+                                            type="number"
+                                            name="margem"
+                                            value={newSimulation.margem}
+                                            onChange={handleNewSimulationChange}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                            placeholder="Contábil"
+                                        />
+                                    </div>
+                                    <button
+                                        className="w-full p-2 bg-white text-zinc-600"
+                                        onClick={calcContratoBruto}
+                                    >
+                                        Calcular
+                                    </button>
+                                </div>
                             </div>
 
                             <button
                                 onClick={handleSaveSimulation}
-                                disabled={!calculateSimulationResult()}
-                                className="w-full px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg 
-                                    transition-colors text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!simulationData.parcela || !simulationData.taxa || !simulationData.prazoRestante}
+                                className="w-full px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg transition-colors text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Simular e Salvar
                             </button>
@@ -479,7 +490,7 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                 {/* Seção de Observações/Chat */}
                 <div className="bg-white/5 rounded-lg p-6 mt-8">
                     <h3 className="text-lg font-semibold text-[#e67f00] mb-4">Observações</h3>
-                    
+
                     {/* Lista de Observações */}
                     <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                         {observations.map((obs, index) => (
@@ -532,9 +543,7 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                         <button
                             onClick={handleAddObservation}
                             disabled={!newObservation.trim() || sendingMessage}
-                            className="p-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg 
-                                transition-colors text-white disabled:opacity-50 
-                                disabled:cursor-not-allowed min-w-[40px] h-[40px] flex items-center justify-center"
+                            className="p-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed min-w-[40px] h-[40px] flex items-center justify-center"
                         >
                             {sendingMessage ? (
                                 <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
