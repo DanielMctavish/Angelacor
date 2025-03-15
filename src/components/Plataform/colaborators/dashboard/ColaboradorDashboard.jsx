@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Add, Person, Description, AccountBalance, Calculate, Chat, Delete, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { Add, Person, Description, AccountBalance, Calculate, Chat, Delete, ExpandMore, ExpandLess, KeyboardArrowDown } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import ColaboratorNavbar from "./components/ColaboratorNavbar";
 import ClientsSection from "./components/ClientsSection";
@@ -26,6 +26,7 @@ function ColaboradorDashboard() {
     const [proposalToDelete, setProposalToDelete] = useState(null);
     const [isClientsExpanded, setIsClientsExpanded] = useState(true);
     const [isProposalsExpanded, setIsProposalsExpanded] = useState(true);
+    const [expandedRows, setExpandedRows] = useState(new Set());
 
     // Definição dos passos de progresso
     const progressSteps = (client) => [
@@ -221,6 +222,18 @@ function ColaboradorDashboard() {
             console.error("Erro ao atualizar proposta:", error);
             toast.error('Erro ao atualizar proposta');
         }
+    };
+
+    const toggleRow = (proposalId) => {
+        setExpandedRows(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(proposalId)) {
+                newSet.delete(proposalId);
+            } else {
+                newSet.add(proposalId);
+            }
+            return newSet;
+        });
     };
 
     if (loading) {
@@ -474,99 +487,16 @@ function ColaboradorDashboard() {
                                 </thead>
                                 <tbody>
                                     {proposals.map((proposal) => (
-                                        <tr key={proposal.id} 
-                                            className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
-                                        >
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    {proposal.client?.url_profile_cover ? (
-                                                        <img
-                                                            src={proposal.client.url_profile_cover}
-                                                            alt={proposal.client.name}
-                                                            className="w-8 h-8 rounded-full object-cover border-2 border-white/10"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                                            <Person className="text-gray-400" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex flex-col">
-                                                        <span className="text-gray-700 font-medium">
-                                                            {proposal.client?.name.split(' ')[0]}
-                                                        </span>
-                                                        <span className="text-gray-400 text-xs">
-                                                            {proposal.client?.cpf}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                                        <AccountBalance className="text-blue-500 text-xl" />
-                                                    </div>
-                                                    <span className="text-gray-700">{proposal.bank?.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className="px-3 py-1 rounded-full text-xs bg-gray-100">
-                                                    {proposal.proposalType}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex flex-col">
-                                                    <span className="text-gray-700">
-                                                        {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
-                                                    </span>
-                                                    <span className="text-gray-400 text-xs">
-                                                        {new Date(proposal.proposalDate).toLocaleTimeString('pt-BR')}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs ${
-                                                    proposal.isTrueContract
-                                                        ? 'bg-green-500/20 text-green-500'
-                                                        : 'bg-yellow-500/20 text-yellow-500'
-                                                }`}>
-                                                    {proposal.isTrueContract ? 'Contrato' : 'Em análise'}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                                        <Calculate className="text-purple-500" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-gray-700">
-                                                            {proposal.currentSimulations?.length || 0}
-                                                        </span>
-                                                        {proposal.currentSimulations?.length > 0 && (
-                                                            <span className="text-gray-400 text-xs">
-                                                                Última: {new Date(proposal.currentSimulations[proposal.currentSimulations.length - 1].date)
-                                                                    .toLocaleDateString('pt-BR')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                                                        <Chat className="text-orange-500" />
-                                                    </div>
-                                                    <span className="text-gray-700">
-                                                        {proposal.observations?.length || 0}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            {user?.function === 'Gerente' && (
+                                        <>
+                                            <tr key={proposal.id} 
+                                                className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                                            >
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-2">
-                                                        {proposal.Colaborator?.url_profile_cover ? (
+                                                        {proposal.client?.url_profile_cover ? (
                                                             <img
-                                                                src={proposal.Colaborator.url_profile_cover}
-                                                                alt={proposal.Colaborator.name}
+                                                                src={proposal.client.url_profile_cover}
+                                                                alt={proposal.client.name}
                                                                 className="w-8 h-8 rounded-full object-cover border-2 border-white/10"
                                                             />
                                                         ) : (
@@ -575,36 +505,191 @@ function ColaboradorDashboard() {
                                                             </div>
                                                         )}
                                                         <div className="flex flex-col">
-                                                            <span className="text-gray-700">{proposal.Colaborator?.name}</span>
-                                                            <span className="text-gray-400 text-xs">{proposal.Colaborator?.function}</span>
+                                                            <span className="text-gray-700 font-medium">
+                                                                {proposal.client?.name.split(' ')[0]}
+                                                            </span>
+                                                            <span className="text-gray-400 text-xs">
+                                                                {proposal.client?.cpf}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>
-                                            )}
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        className="text-blue-500 hover:text-blue-400 transition-colors font-medium"
-                                                        onClick={() => hasAdminPrivileges(user?.function) 
-                                                            ? setSelectedProposal(proposal)
-                                                            : setSelectedProposalForDetails(proposal)
-                                                        }
-                                                    >
-                                                        {hasAdminPrivileges(user?.function) ? 'Analisar' : 'Ver detalhes'}
-                                                    </button>
-
-                                                    {hasAdminPrivileges(user?.function) && (
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                            <AccountBalance className="text-blue-500 text-xl" />
+                                                        </div>
+                                                        <span className="text-gray-700">{proposal.bank?.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="px-3 py-1 rounded-full text-xs bg-gray-100">
+                                                        {proposal.proposalType}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-gray-700">
+                                                            {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
+                                                        </span>
+                                                        <span className="text-gray-400 text-xs">
+                                                            {new Date(proposal.proposalDate).toLocaleTimeString('pt-BR')}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs ${
+                                                        proposal.isTrueContract
+                                                            ? 'bg-green-500/20 text-green-500'
+                                                            : 'bg-yellow-500/20 text-yellow-500'
+                                                    }`}>
+                                                        {proposal.isTrueContract ? 'Contrato' : 'Em análise'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                            <Calculate className="text-purple-500" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-gray-700">
+                                                                {proposal.currentSimulations?.length || 0}
+                                                            </span>
+                                                            {proposal.currentSimulations?.length > 0 && (
+                                                                <span className="text-gray-400 text-xs">
+                                                                    Última: {new Date(proposal.currentSimulations[proposal.currentSimulations.length - 1].date)
+                                                                        .toLocaleDateString('pt-BR')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {proposal.currentSimulations?.length > 0 && (
+                                                            <button
+                                                                onClick={() => toggleRow(proposal.id)}
+                                                                className={`p-1 rounded-full hover:bg-gray-100 transition-transform ${
+                                                                    expandedRows.has(proposal.id) ? 'rotate-180' : ''
+                                                                }`}
+                                                            >
+                                                                <KeyboardArrowDown className="text-gray-400" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                                            <Chat className="text-orange-500" />
+                                                        </div>
+                                                        <span className="text-gray-700">
+                                                            {proposal.observations?.length || 0}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                {user?.function === 'Gerente' && (
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {proposal.Colaborator?.url_profile_cover ? (
+                                                                <img
+                                                                    src={proposal.Colaborator.url_profile_cover}
+                                                                    alt={proposal.Colaborator.name}
+                                                                    className="w-8 h-8 rounded-full object-cover border-2 border-white/10"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                                    <Person className="text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex flex-col">
+                                                                <span className="text-gray-700">{proposal.Colaborator?.name}</span>
+                                                                <span className="text-gray-400 text-xs">{proposal.Colaborator?.function}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-2">
                                                         <button
-                                                            onClick={() => setProposalToDelete(proposal)}
-                                                            className="p-1 text-red-400 hover:text-red-500 transition-colors"
-                                                            title="Excluir proposta"
+                                                            className="text-blue-500 hover:text-blue-400 transition-colors font-medium"
+                                                            onClick={() => hasAdminPrivileges(user?.function) 
+                                                                ? setSelectedProposal(proposal)
+                                                                : setSelectedProposalForDetails(proposal)
+                                                            }
                                                         >
-                                                            <Delete className="text-xl" />
+                                                            {hasAdminPrivileges(user?.function) ? 'Analisar' : 'Ver detalhes'}
                                                         </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
+
+                                                        {hasAdminPrivileges(user?.function) && (
+                                                            <button
+                                                                onClick={() => setProposalToDelete(proposal)}
+                                                                className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                                                                title="Excluir proposta"
+                                                            >
+                                                                <Delete className="text-xl" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedRows.has(proposal.id) && proposal.currentSimulations?.length > 0 && (
+                                                <tr>
+                                                    <td colSpan={user?.function === 'Gerente' ? 9 : 8} className="bg-gray-50 border-b border-gray-100">
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            transition={{ duration: 0.2 }}
+                                                            className="p-4"
+                                                        >
+                                                            <div className="grid gap-3">
+                                                                {proposal.currentSimulations
+                                                                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                                                                    .map((sim, index) => (
+                                                                    <div
+                                                                        key={index}
+                                                                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                                                                    >
+                                                                        <div className="grid grid-cols-4 gap-4">
+                                                                            <div>
+                                                                                <span className="text-gray-500 text-sm">Parcela</span>
+                                                                                <p className="text-gray-700 font-medium">
+                                                                                    {parseFloat(sim.parcela).toLocaleString('pt-BR', {
+                                                                                        style: 'currency',
+                                                                                        currency: 'BRL'
+                                                                                    })}
+                                                                                </p>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-gray-500 text-sm">Saldo Devedor</span>
+                                                                                <p className="text-green-600 font-medium">
+                                                                                    {parseFloat(sim.saldoDevedor).toLocaleString('pt-BR', {
+                                                                                        style: 'currency',
+                                                                                        currency: 'BRL'
+                                                                                    })}
+                                                                                </p>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-gray-500 text-sm">Taxa</span>
+                                                                                <p className="text-gray-700 font-medium">
+                                                                                    {sim.taxa}% a.m.
+                                                                                </p>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-gray-500 text-sm">Prazo</span>
+                                                                                <p className="text-gray-700 font-medium">
+                                                                                    {sim.prazoRestante} meses
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="mt-2 text-xs text-gray-400">
+                                                                            Simulado em: {new Date(sim.date).toLocaleString('pt-BR')}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
                                     ))}
                                 </tbody>
                             </table>

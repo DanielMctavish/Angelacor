@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Close, Person, AccountBalance, Description, AttachMoney, Calculate, Send } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Close, Person, AccountBalance, Description, AttachMoney, Calculate, Send, History } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../Common/Toast/Toast';
 
@@ -23,6 +23,7 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
     const [observations, setObservations] = useState([]);
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
+    const [showSimulations, setShowSimulations] = useState(false);
 
     // Atualiza o estado local quando a prop muda
     useEffect(() => {
@@ -316,118 +317,132 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                 <h3 className="text-lg font-medium">Simulação de Refinanciamento</h3>
                             </div>
 
-                            {/* Display do Resultado em Tempo Real */}
-                            {(saldoDevedorDisplay || valorTotalDisplay || economiaTotalDisplay) && (
-                                <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
-                                    <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
-                                        <span className="text-white font-medium">
-                                            {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
-                                                style: 'currency',
-                                                currency: 'BRL'
-                                            })}
-                                        </span>
+                            {/* Área de Cálculo Sem IOF */}
+                            <div className="bg-white/5 p-4 rounded-lg space-y-4">
+                                <h4 className="text-sm font-medium text-gray-400">Cálculo de Saldo Devedor</h4>
+                                {/* Display do Resultado em Tempo Real */}
+                                {(saldoDevedorDisplay || valorTotalDisplay || economiaTotalDisplay) && (
+                                    <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
+                                        <div className="text-center">
+                                            <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
+                                            <span className="text-white font-medium">
+                                                {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
+                                            <span className="text-green-400 font-medium">
+                                                {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs text-gray-400 block mb-1">Economia</span>
+                                            <span className="text-yellow-400 font-medium">
+                                                {parseFloat(economiaTotalDisplay).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                })}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
-                                        <span className="text-green-400 font-medium">
-                                            {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
-                                                style: 'currency',
-                                                currency: 'BRL'
-                                            })}
-                                        </span>
-                                    </div>
-                                    <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">Economia</span>
-                                        <span className="text-yellow-400 font-medium">
-                                            {parseFloat(economiaTotalDisplay).toLocaleString('pt-BR', {
-                                                style: 'currency',
-                                                currency: 'BRL'
-                                            })}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
+                                )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm text-gray-400 block mb-1">Valor da Parcela</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm text-gray-400 block mb-1">Valor da Parcela</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
+                                            <input
+                                                type="text"
+                                                name="parcela"
+                                                value={simulationData.parcela}
+                                                onChange={handleSimulationChange}
+                                                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                                placeholder="0,00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (% a.m.)</label>
                                         <input
                                             type="text"
-                                            name="parcela"
-                                            value={simulationData.parcela}
+                                            name="taxa"
+                                            value={simulationData.taxa}
                                             onChange={handleSimulationChange}
-                                            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
                                             placeholder="0,00"
                                         />
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (% a.m.)</label>
-                                    <input
-                                        type="text"
-                                        name="taxa"
-                                        value={simulationData.taxa}
-                                        onChange={handleSimulationChange}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                        placeholder="0,00"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm text-gray-400 block mb-1">Prazo Restante</label>
-                                    <input
-                                        type="number"
-                                        name="prazoRestante"
-                                        value={simulationData.prazoRestante}
-                                        onChange={handleSimulationChange}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                        placeholder="Número de parcelas"
-                                    />
-                                </div>
-                                <div className="bg-[#1a1a1a] p-2 rounded-lg flex flex-col gap-2 w-full">
-                                    <span className="text-[#fff] bg-red-700 p-3">
-                                        {resultBruto ? parseFloat(resultBruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A'}
-                                    </span>
                                     <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Prazo Atual</label>
+                                        <label className="text-sm text-gray-400 block mb-1">Prazo Restante</label>
                                         <input
                                             type="number"
-                                            name="novoPrazo"
-                                            value={newSimulation.novoPrazo}
-                                            onChange={handleNewSimulationChange}
+                                            name="prazoRestante"
+                                            value={simulationData.prazoRestante}
+                                            onChange={handleSimulationChange}
                                             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                            placeholder="Número inteiro"
+                                            placeholder="Número de parcelas"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (atual)</label>
-                                        <input
-                                            type="number"
-                                            name="novaTaxa"
-                                            value={newSimulation.novaTaxa}
-                                            onChange={handleNewSimulationChange}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                            placeholder="Porcentagem"
-                                        />
+                                </div>
+                            </div>
+
+                            {/* Área de Cálculo Com IOF */}
+                            <div className="bg-white/5 p-4 rounded-lg space-y-4 mt-4">
+                                <h4 className="text-sm font-medium text-gray-400">Simulação com IOF</h4>
+                                <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-4">
+                                    <div className="text-center bg-red-700 p-3 rounded-lg">
+                                        <span className="text-xs text-gray-200 block mb-1">Valor com IOF</span>
+                                        <span className="text-white font-medium text-lg">
+                                            {resultBruto ? parseFloat(resultBruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A'}
+                                        </span>
                                     </div>
-                                    <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Margem do Cliente</label>
-                                        <input
-                                            type="number"
-                                            name="margem"
-                                            value={newSimulation.margem}
-                                            onChange={handleNewSimulationChange}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                            placeholder="Contábil"
-                                        />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm text-gray-400 block mb-1">Prazo Atual</label>
+                                            <input
+                                                type="number"
+                                                name="novoPrazo"
+                                                value={newSimulation.novoPrazo}
+                                                onChange={handleNewSimulationChange}
+                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                                placeholder="Número inteiro"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (atual)</label>
+                                            <input
+                                                type="number"
+                                                name="novaTaxa"
+                                                value={newSimulation.novaTaxa}
+                                                onChange={handleNewSimulationChange}
+                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                                placeholder="Porcentagem"
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-sm text-gray-400 block mb-1">Margem do Cliente</label>
+                                            <input
+                                                type="number"
+                                                name="margem"
+                                                value={newSimulation.margem}
+                                                onChange={handleNewSimulationChange}
+                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                                placeholder="Contábil"
+                                            />
+                                        </div>
                                     </div>
                                     <button
-                                        className="w-full p-2 bg-white text-zinc-600"
+                                        className="w-full p-2 bg-white hover:bg-gray-100 text-zinc-600 rounded-lg transition-colors"
                                         onClick={calcContratoBruto}
                                     >
-                                        Calcular
+                                        Calcular com IOF
                                     </button>
                                 </div>
                             </div>
@@ -440,14 +455,40 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                 Simular e Salvar
                             </button>
                         </div>
+                    </div>
+                </div>
 
-                        {/* Lista de Simulações */}
-                        {proposal.currentSimulations?.length > 0 && (
-                            <div className="bg-white/5 p-4 rounded-lg space-y-3">
-                                <h3 className="text-lg font-medium text-gray-400">Simulações Anteriores</h3>
-                                <div className="space-y-2">
-                                    {proposal.currentSimulations.map((sim, index) => (
-                                        <div key={index} className="bg-white/5 p-3 rounded-lg">
+                {/* Botão Flutuante para Simulações Anteriores */}
+                <button
+                    onClick={() => setShowSimulations(true)}
+                    className="fixed right-8 bottom-8 p-4 bg-[#e67f00] hover:bg-[#ff8c00] rounded-full shadow-lg transition-colors text-white"
+                >
+                    <History />
+                </button>
+
+                {/* Aside de Simulações Anteriores */}
+                <AnimatePresence>
+                    {showSimulations && (
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 20 }}
+                            className="fixed right-0 top-0 h-full w-96 bg-[#1f1f1f] shadow-xl overflow-y-auto"
+                        >
+                            <div className="p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-lg font-medium text-[#e67f00]">Simulações Anteriores</h3>
+                                    <button
+                                        onClick={() => setShowSimulations(false)}
+                                        className="text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        <Close />
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    {proposal.currentSimulations?.sort((a, b) => new Date(b.date) - new Date(a.date)).map((sim, index) => (
+                                        <div key={index} className="bg-white/5 p-4 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
                                             <div className="grid grid-cols-2 gap-2 text-sm">
                                                 <div>
                                                     <span className="text-gray-400">Parcela: </span>
@@ -476,16 +517,16 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                                     <span className="text-white">{sim.prazoRestante} meses</span>
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-gray-500 mt-1">
+                                            <div className="text-xs text-gray-500 mt-2">
                                                 {new Date(sim.date).toLocaleString('pt-BR')}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Seção de Observações/Chat */}
                 <div className="bg-white/5 rounded-lg p-6 mt-8">

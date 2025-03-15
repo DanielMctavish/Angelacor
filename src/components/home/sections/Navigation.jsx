@@ -63,7 +63,7 @@ function Navigation() {
                                 Sou Cliente
                             </button>
                             <button 
-                                onClick={() => navigate('/plataforma')}
+                                onClick={() => navigate('/login')}
                                 className="btn-platform text-[#ffffff] bg-[#fb9445] p-3 font-bold rounded-[40px]"
                             >
                                 Plataforma
