@@ -12,11 +12,11 @@ import banner07 from "../../../medias/covers_banner/banner_07.jpeg"
 
 function HeroSection() {
     const banners = [
-        { id: 1, image: banner01, alt: "Banner 1" },
         { id: 2, image: banner02, alt: "Banner 2" },
         { id: 3, image: banner03, alt: "Banner 3" },
         { id: 4, image: banner04, alt: "Banner 4" },
         { id: 5, image: banner05, alt: "Banner 5" },
+        { id: 1, image: banner01, alt: "Banner 1" },
         { id: 6, image: banner06, alt: "Banner 6" },
         { id: 7, image: banner07, alt: "Banner 7" },
     ];

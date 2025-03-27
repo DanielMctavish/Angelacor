@@ -1,13 +1,67 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Close, Person, Send } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../Common/Toast/Toast';
+import io from 'socket.io-client';
 
 function ProposalChatAdm({ isOpen, onClose, proposal, onMessageSent }) {
     const [observations, setObservations] = useState([]);
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
+    const [socket, setSocket] = useState(null);
+    // Usar useRef para guardar o ID da proposta e evitar problemas de closure
+    const proposalIdRef = useRef(null);
+
+    // Inicializar o socket e entrar na sala
+    useEffect(() => {
+        if (isOpen && proposal?.id) {
+            proposalIdRef.current = proposal.id;
+            
+            const newSocket = io(import.meta.env.VITE_API_URL);
+            setSocket(newSocket);
+            
+            // Entrar na sala da proposta
+            newSocket.emit('join-proposal', proposal.id);
+            
+            // Nome da sala para ouvir as mensagens
+            const roomName = `angelcor-conversation-${proposal.id}`;
+            
+            // Ouvir por novas mensagens
+            newSocket.on(roomName, (data) => {
+                console.log("Recebendo mensagem no chat de admin:", data);
+                if (data && data.observations && Array.isArray(data.observations)) {
+                    const sortedObservations = [...data.observations].sort(
+                        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+                    setObservations(sortedObservations);
+                }
+            });
+            
+            // Também ouvimos o evento 'new-observation' caso o servidor esteja usando este método
+            newSocket.on('new-observation', (data) => {
+                console.log("Recebendo via new-observation no chat de admin:", data);
+                if (data && data.observations && Array.isArray(data.observations)) {
+                    const sortedObservations = [...data.observations].sort(
+                        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+                    setObservations(sortedObservations);
+                } else if (data && Array.isArray(data)) {
+                    const sortedObservations = [...data].sort(
+                        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+                    setObservations(sortedObservations);
+                }
+            });
+            
+            return () => {
+                // Parar de ouvir eventos ao desmontar
+                newSocket.off(roomName);
+                newSocket.off('new-observation');
+                newSocket.disconnect();
+            };
+        }
+    }, [isOpen, proposal?.id]);
 
     useEffect(() => {
         if (proposal?.observations) {
@@ -16,11 +70,25 @@ function ProposalChatAdm({ isOpen, onClose, proposal, onMessageSent }) {
                 (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
             );
             setObservations(sortedObservations);
+            
+            // Atualizar a referência do ID da proposta sempre que a proposta mudar
+            if (proposal.id) {
+                proposalIdRef.current = proposal.id;
+            }
         }
     }, [proposal]);
 
     const handleAddObservation = async () => {
         if (!newObservation.trim() || sendingMessage) return;
+
+        // Usar o ID da proposta da referência, para evitar problemas de closure
+        const currentProposalId = proposalIdRef.current;
+        
+        if (!currentProposalId) {
+            console.error('ID da proposta não disponível');
+            toast.error('Erro ao enviar mensagem: ID da proposta não disponível');
+            return;
+        }
 
         setSendingMessage(true);
         try {
@@ -29,11 +97,12 @@ function ProposalChatAdm({ isOpen, onClose, proposal, onMessageSent }) {
             console.log('Enviando mensagem:', {
                 observation: newObservation.trim(),
                 isAdmSender: true,
-                AdminId: adminData.user.id
+                AdminId: adminData.user.id,
+                proposalId: currentProposalId
             });
 
             const response = await axios.patch(
-                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
+                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${currentProposalId}`,
                 {
                     observations: [{
                         observation: newObservation.trim(),
@@ -130,7 +199,7 @@ function ProposalChatAdm({ isOpen, onClose, proposal, onMessageSent }) {
                     {observations.map((obs, index) => (
                         <div key={index} className="bg-white/5 p-4 rounded-lg">
                             <div className="flex items-start gap-3">
-                                {obs.isAdmSender ? (
+                                {obs.isAdmSender || obs.Admin ? (
                                     obs.Admin?.url_profile_cover ? (
                                         <img
                                             src={obs.Admin.url_profile_cover}
@@ -159,10 +228,12 @@ function ProposalChatAdm({ isOpen, onClose, proposal, onMessageSent }) {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <span className="text-white text-sm font-medium">
-                                                {obs.isAdmSender ? obs.Admin?.name : obs.colaborator?.name}
+                                                {(obs.isAdmSender || obs.Admin) ? 
+                                                    (obs.Admin?.name || 'Administrador') : 
+                                                    (obs.colaborator?.name || 'Colaborador')}
                                             </span>
                                             <span className="text-gray-400 text-xs ml-2">
-                                                {obs.isAdmSender ? 'Administrador' : obs.colaborator?.function}
+                                                {(obs.isAdmSender || obs.Admin) ? 'Administrador' : obs.colaborator?.function}
                                             </span>
                                         </div>
                                         <span className="text-gray-400 text-xs">

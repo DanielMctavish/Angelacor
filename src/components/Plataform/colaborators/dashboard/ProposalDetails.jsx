@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Close, Person, AccountBalance, Description, AttachMoney, Calculate, Send, History } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../Common/Toast/Toast';
+import io from 'socket.io-client';
 
 function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessageSent }) {
     const [proposal, setProposal] = useState(initialProposal);
@@ -24,6 +25,59 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
     const [showSimulations, setShowSimulations] = useState(false);
+    const [socket, setSocket] = useState(null);
+
+    // Inicializar socket e entrar na sala quando o componente montar
+    useEffect(() => {
+
+        if (isOpen && initialProposal?.id) {
+            const newSocket = io(import.meta.env.VITE_API_URL);
+            setSocket(newSocket);
+            
+            // Emitir evento de entrar na sala usando o formato correto
+            newSocket.emit('join-proposal', initialProposal.id);
+
+            // Nome da sala para ouvir as mensagens
+            const roomName = `angelcor-conversation-${initialProposal.id}`;
+
+            // Ouvir por novas mensagens no canal específico da sala
+            newSocket.on(roomName, (data) => {
+                console.log("observando mensagem! ", data)
+                // O servidor está enviando um objeto { proposalId, observations, updatedAt }
+                // Precisamos extrair as observations desse objeto
+                if (data && data.observations && Array.isArray(data.observations)) {
+                    const uniqueObservations = data.observations.filter(
+                        (obs, index, self) => index === self.findIndex((o) => o.createdAt === obs.createdAt)
+                    );
+                    setObservations(uniqueObservations);
+                }
+            });
+
+            // Também ouvimos o evento 'new-observation' caso o servidor esteja usando este método
+            newSocket.on('new-observation', (data) => {
+                console.log("Recebendo via new-observation: ", data);
+                if (data && data.observations && Array.isArray(data.observations)) {
+                    const uniqueObservations = data.observations.filter(
+                        (obs, index, self) => index === self.findIndex((o) => o.createdAt === obs.createdAt)
+                    );
+                    setObservations(uniqueObservations);
+                } else if (data && Array.isArray(data)) {
+                    const uniqueObservations = data.filter(
+                        (obs, index, self) => index === self.findIndex((o) => o.createdAt === obs.createdAt)
+                    );
+                    setObservations(uniqueObservations);
+                }
+            });
+
+            return () => {
+                // Parar de ouvir o evento ao desmontar
+                newSocket.off(roomName);
+                newSocket.off('new-observation');
+                // Ao desmontar, desconectar o socket
+                newSocket.disconnect();
+            };
+        }
+    }, [isOpen, initialProposal?.id]);
 
     // Atualiza o estado local quando a prop muda
     useEffect(() => {
@@ -147,14 +201,6 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                 { headers: { 'Authorization': `Bearer ${colaboratorData.token}` } }
             );
 
-            const observationWithMetadata = {
-                ...newObservationData,
-                colaborator: colaboratorData.user,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-
-            setObservations((prev) => [...prev, observationWithMetadata]);
             setNewObservation('');
             toast.success('Mensagem enviada!');
             onMessageSent?.();
@@ -537,10 +583,10 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                         {observations.map((obs, index) => (
                             <div key={index} className="bg-white/5 p-4 rounded-lg">
                                 <div className="flex items-start gap-3">
-                                    {obs.colaborator?.url_profile_cover ? (
+                                    {obs.colaborator?.url_profile_cover || obs.Admin?.url_profile_cover ? (
                                         <img
-                                            src={obs.colaborator.url_profile_cover}
-                                            alt={obs.colaborator.name}
+                                            src={obs.colaborator?.url_profile_cover || obs.Admin?.url_profile_cover}
+                                            alt={(obs.colaborator?.name || obs.Admin?.name || 'Usuário')}
                                             className="w-8 h-8 rounded-full object-cover"
                                         />
                                     ) : (
@@ -552,10 +598,10 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <span className="text-white text-sm font-medium">
-                                                    {obs.colaborator?.name}
+                                                    {obs.colaborator?.name || obs.Admin?.name || 'Usuário'}
                                                 </span>
                                                 <span className="text-gray-400 text-xs ml-2">
-                                                    {obs.colaborator?.function}
+                                                    {obs.colaborator?.function || (obs.Admin || obs.isAdmSender ? 'Administrador' : '')}
                                                 </span>
                                             </div>
                                             <span className="text-gray-400 text-xs">
