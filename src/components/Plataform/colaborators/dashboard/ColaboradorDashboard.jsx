@@ -489,7 +489,9 @@ function ColaboradorDashboard() {
                                     {proposals.map((proposal) => (
                                         <>
                                             <tr key={proposal.id} 
-                                                className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                                                className={`border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${
+                                                    proposal.contractStatus === 'aprovado' ? 'bg-green-100/60' : ''
+                                                }`}
                                             >
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-2">
@@ -559,6 +561,11 @@ function ColaboradorDashboard() {
                                                                 <span className="text-gray-400 text-xs">
                                                                     Última: {new Date(proposal.currentSimulations[proposal.currentSimulations.length - 1].date)
                                                                         .toLocaleDateString('pt-BR')}
+                                                                </span>
+                                                            )}
+                                                            {proposal.currentSimulations?.some(sim => sim.iofCalculation && sim.iofCalculation.valorComIOF) && (
+                                                                <span className="text-amber-500 text-xs font-medium">
+                                                                    Inclui IOF
                                                                 </span>
                                                             )}
                                                         </div>
@@ -679,6 +686,48 @@ function ColaboradorDashboard() {
                                                                                 </p>
                                                                             </div>
                                                                         </div>
+                                                                        
+                                                                        {/* Exibir dados de IOF se disponíveis */}
+                                                                        {sim.iofCalculation && sim.iofCalculation.valorComIOF && (
+                                                                            <div className="mt-3 pt-3 border-t border-gray-100">
+                                                                                <div className="flex items-center mb-2">
+                                                                                    <span className="text-amber-600 font-medium text-sm">Simulação com IOF</span>
+                                                                                </div>
+                                                                                <div className="grid grid-cols-4 gap-4">
+                                                                                    <div>
+                                                                                        <span className="text-gray-500 text-xs">Valor com IOF</span>
+                                                                                        <p className="text-red-600 font-medium">
+                                                                                            {parseFloat(sim.iofCalculation.valorComIOF).toLocaleString('pt-BR', {
+                                                                                                style: 'currency',
+                                                                                                currency: 'BRL'
+                                                                                            })}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="text-gray-500 text-xs">Margem</span>
+                                                                                        <p className="text-gray-700 font-medium">
+                                                                                            {parseFloat(sim.iofCalculation.margem).toLocaleString('pt-BR', {
+                                                                                                style: 'currency',
+                                                                                                currency: 'BRL'
+                                                                                            })}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="text-gray-500 text-xs">Nova Taxa</span>
+                                                                                        <p className="text-gray-700 font-medium">
+                                                                                            {sim.iofCalculation.novaTaxa}% a.m.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="text-gray-500 text-xs">Novo Prazo</span>
+                                                                                        <p className="text-gray-700 font-medium">
+                                                                                            {sim.iofCalculation.novoPrazo} meses
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        
                                                                         <div className="mt-2 text-xs text-gray-400">
                                                                             Simulado em: {new Date(sim.date).toLocaleString('pt-BR')}
                                                                         </div>

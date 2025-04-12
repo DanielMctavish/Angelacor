@@ -32,7 +32,7 @@ function TriunfoHome() {
                         initial={{ y: -100 }}
                         animate={{ y: 0 }}
                         exit={{ y: -100 }}
-                        className="fixed top-0 left-0 right-0 bg-[#133785] text-white z-50 shadow-lg"
+                        className="fixed bottom-0 left-0 right-0 bg-[#133785] text-white z-50 shadow-lg"
                     >
                         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm">
@@ -47,13 +47,7 @@ function TriunfoHome() {
                                     className="px-4 py-1.5 bg-[#e67f00] hover:bg-[#ff8c00] 
                                         rounded-lg text-sm transition-colors"
                                 >
-                                    Aceitar
-                                </button>
-                                <button
-                                    onClick={() => setShowPrivacyBar(false)}
-                                    className="text-white/80 hover:text-white"
-                                >
-                                    <Close className="text-xl" />
+                                    entendi
                                 </button>
                             </div>
                         </div>

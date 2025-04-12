@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { CheckCircle, Error, Close } from '@mui/icons-material';
+import { CheckCircle, Error, Warning, Close } from '@mui/icons-material';
 
 let toastId = 1;
 
@@ -15,11 +15,13 @@ const toastVariants = {
 };
 
 const ToastIcon = ({ type }) => {
-    return type === 'success' ? (
-        <CheckCircle className="text-[#e67f00] text-xl" />
-    ) : (
-        <Error className="text-red-500 text-xl" />
-    );
+    if (type === 'success') {
+        return <CheckCircle className="text-[#e67f00] text-xl" />;
+    } else if (type === 'warning') {
+        return <Warning className="text-yellow-500 text-xl" />;
+    } else {
+        return <Error className="text-red-500 text-xl" />;
+    }
 };
 
 export const toast = {
@@ -38,6 +40,16 @@ export const toast = {
             detail: {
                 id: toastId++,
                 type: 'error',
+                message,
+                duration: 4000
+            }
+        }));
+    },
+    warning: (message) => {
+        window.dispatchEvent(new CustomEvent('showToast', {
+            detail: {
+                id: toastId++,
+                type: 'warning',
                 message,
                 duration: 4000
             }
@@ -81,7 +93,9 @@ function ToastContainer() {
                             p-4 rounded-lg shadow-lg backdrop-blur-sm
                             ${toast.type === 'success' 
                                 ? 'bg-[#1f1f1f]/95 border border-[#e67f00]/20' 
-                                : 'bg-[#1f1f1f]/95 border border-red-500/20'
+                                : toast.type === 'warning' 
+                                    ? 'bg-[#1f1f1f]/95 border border-yellow-500/20'
+                                    : 'bg-[#1f1f1f]/95 border border-red-500/20'
                             }
                         `}
                     >

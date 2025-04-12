@@ -1,4 +1,4 @@
-import { Add, Search, Visibility, Delete, Assignment, Groups, Edit, Block, AccountBalance, Person, ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Add, Search, Chat, Groups, AccountBalance, ExpandLess, ExpandMore, Assignment, Analytics } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -15,6 +15,7 @@ import ClientsListAdmin from './Clients/ClientsListAdmin';
 import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
 import ListProposalsModal from './Proposals/ListProposalsModal';
+import AdminChat from './AdminChat/AdminChat';
 
 function AdminDashboard() {
     const navigate = useNavigate();
@@ -30,6 +31,9 @@ function AdminDashboard() {
     const [isListProposalsModalOpen, setIsListProposalsModalOpen] = useState(false);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, client: null });
     const [isClientListExpanded, setIsClientListExpanded] = useState(true);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [allProposals, setAllProposals] = useState([]);
+    const [isProposalsListExpanded, setIsProposalsListExpanded] = useState(true);
 
     useEffect(() => {
         checkAuth();
@@ -66,6 +70,30 @@ function AdminDashboard() {
             setUser(adminData.user);
             setClients(sortedClients);
             setBanks(banksResponse.data || []);
+            
+            // Extrair todas as propostas de todos os clientes
+            const proposals = sortedClients.reduce((acc, client) => {
+                if (client.proposals && client.proposals.length > 0) {
+                    // Adiciona informações do cliente em cada proposta
+                    const clientProposals = client.proposals.map(proposal => ({
+                        ...proposal,
+                        client: {
+                            id: client.id,
+                            name: client.name,
+                            email: client.email
+                        }
+                    }));
+                    return [...acc, ...clientProposals];
+                }
+                return acc;
+            }, []);
+            
+            // Ordenar propostas pela data mais recente
+            const sortedProposals = proposals.sort((a, b) => 
+                new Date(b.proposalDate) - new Date(a.proposalDate)
+            );
+            
+            setAllProposals(sortedProposals);
             setLoading(false);
 
         } catch (error) {
@@ -161,6 +189,10 @@ function AdminDashboard() {
         navigate('/admin-login');
     };
 
+    const toggleChat = () => {
+        setIsChatOpen(!isChatOpen);
+    };
+
     if (loading) {
         return (
             <div className="w-full h-screen bg-gradient-to-b from-[#133785] to-[#0a1c42] 
@@ -209,11 +241,29 @@ function AdminDashboard() {
                         <button
                             onClick={() => navigate('/plataforma/colaboradores')}
                             className="w-full md:w-auto flex items-center justify-center gap-2 
-                            bg-[#343434] hover:bg-[#e67f00] px-4 py-3 md:py-2 
+                            bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
                             rounded-lg transition-all text-base"
                         >
                             <Groups />
                             Area de Colaboradores
+                        </button>
+                        <button
+                            onClick={toggleChat}
+                            className={`w-full md:w-auto flex items-center justify-center gap-2 
+                            ${isChatOpen ? 'bg-[#e67f00]' : 'bg-[#1f1f1f] hover:bg-[#e67f00]'} px-4 py-3 md:py-2 
+                            rounded-lg transition-all text-base`}
+                        >
+                            <Chat />
+                            Observações
+                        </button>
+                        <button
+                            onClick={() => navigate('/plataforma/analytics')}
+                            className={`w-full md:w-auto flex items-center justify-center gap-2 
+                            ${isChatOpen ? 'bg-[#e67f00]' : 'bg-[#1f1f1f] hover:bg-[#e67f00]'} px-4 py-3 md:py-2 
+                            rounded-lg transition-all text-base`}
+                        >
+                            <Analytics />
+                            Métricas
                         </button>
                     </div>
 
@@ -249,6 +299,93 @@ function AdminDashboard() {
                         </motion.div>
                     ))}
                 </div>
+
+                {/* Seção de Propostas a serem aprovadas */}
+                <motion.div
+                    initial={{ x: -100, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1.1, type: "spring", stiffness: 100 }}
+                    className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden"
+                >
+                    <div className="p-4 border-b border-white/10">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsProposalsListExpanded(!isProposalsListExpanded)}
+                                    className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                                >
+                                    {isProposalsListExpanded ? (
+                                        <ExpandLess className="text-white" />
+                                    ) : (
+                                        <ExpandMore className="text-white" />
+                                    )}
+                                </button>
+                                <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                                    <Assignment className="text-[#e67f00]" />
+                                    Propostas a serem aprovadas
+                                </h2>
+                            </div>
+                            <div className="text-sm text-gray-400">
+                                {allProposals.filter(p => !p.isApproved).length} pendentes
+                            </div>
+                        </div>
+                    </div>
+
+                    <motion.div
+                        initial={false}
+                        animate={{
+                            height: isProposalsListExpanded ? 'auto' : 0,
+                            opacity: isProposalsListExpanded ? 1 : 0
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="divide-y divide-white/5">
+                            {allProposals.filter(p => !p.isApproved).length === 0 ? (
+                                <div className="text-center text-gray-400 py-8">
+                                    <Assignment className="mx-auto mb-2 text-3xl text-gray-500" />
+                                    Nenhuma proposta pendente de aprovação
+                                </div>
+                            ) : (
+                                allProposals
+                                    .filter(p => !p.isApproved)
+                                    .map((proposal) => (
+                                        <div
+                                            key={proposal.id}
+                                            className="p-4 hover:bg-white/5 transition-all cursor-pointer"
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-medium text-white">{proposal.proposalType}</h3>
+                                                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
+                                                            Aguardando Aprovação
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-400 mt-1">{proposal.client?.name}</p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <span className="text-xs text-gray-500">
+                                                            {proposal.bank?.name || "Banco não especificado"}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">•</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(proposal.proposalDate).toLocaleDateString('pt-BR')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {/* Função para visualizar proposta */}}
+                                                    className="px-3 py-1 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg text-sm transition-colors"
+                                                >
+                                                    Visualizar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                            )}
+                        </div>
+                    </motion.div>
+                </motion.div>
 
                 <motion.div
                     initial={{ x: -100, opacity: 0 }}
@@ -334,6 +471,9 @@ function AdminDashboard() {
                     </div>
                 </motion.div>
             </main>
+
+            {/* Chat Modal */}
+            <AdminChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} proposals={allProposals} />
 
             <AnimatePresence>
                 {isCreateModalOpen && (

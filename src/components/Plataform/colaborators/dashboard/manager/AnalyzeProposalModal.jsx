@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Close, Person, Description, CheckCircle, Cancel, Calculate, Send, WhatsApp } from '@mui/icons-material';
+import { Close, Person, Description, CheckCircle, Cancel, Calculate, Send, WhatsApp, Edit, Save, DoneAll } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../../Common/Toast/Toast';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageSent }) {
     const [loading, setLoading] = useState(false);
@@ -11,6 +13,9 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
     const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+    const [contractText, setContractText] = useState('');
+    const [editingContract, setEditingContract] = useState(false);
+    const [savingContract, setSavingContract] = useState(false);
 
     if (!isOpen || !proposal) return null;
 
@@ -35,6 +40,30 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
             );
 
             setObservations(sortedObservations);
+        }
+
+        // Definir o texto do contrato se ele já existir na proposta
+        if (proposal?.contractContent) {
+            setContractText(proposal.contractContent);
+        } else {
+            // Template básico de contrato se não existir
+            setContractText(`<h2>CONTRATO DE EMPRÉSTIMO - ${proposal?.proposalType?.toUpperCase()}</h2>
+<p><strong>IDENTIFICAÇÃO DAS PARTES</strong></p>
+<p><strong>CLIENTE:</strong> ${proposal?.client?.name || ''}, CPF: ${proposal?.client?.cpf || ''}</p>
+<p><strong>BANCO:</strong> ${proposal?.bank?.name || ''}</p>
+<p><strong>VALOR DO CONTRATO:</strong> R$ ${proposal?.contractValue?.toLocaleString('pt-BR') || ''}</p>
+<p><strong>PARCELAS:</strong> ${proposal?.contractInstallments || ''} x R$ ${(proposal?.contractValue / proposal?.contractInstallments)?.toLocaleString('pt-BR') || ''}</p>
+<p><strong>TAXA DE JUROS:</strong> ${proposal?.contractInterestRate || ''}% a.m.</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.</p>
+
+<p><strong>CLÁUSULAS E CONDIÇÕES</strong></p>
+<p>1. O presente contrato tem por objeto a concessão de empréstimo ao CLIENTE pelo BANCO, conforme as condições estabelecidas neste instrumento.</p>
+<p>2. O CLIENTE se compromete a pagar o valor total do empréstimo em parcelas mensais, conforme especificado acima.</p>
+<p>3. Em caso de atraso no pagamento, incidirá multa de 2% sobre o valor da parcela, além de juros de mora de 1% ao mês.</p>
+
+<p>Editado por: ${JSON.parse(localStorage.getItem('colaboratorData'))?.user?.name || ''}</p>
+<p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>`);
         }
     }, [proposal]);
 
@@ -80,8 +109,10 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
                 `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
                 {
                     isTrueContract: approved,
+                    contractStatus: approved ? 'aprovado' : 'reprovado',
                     managerObservations: observations,
-                    analyzedAt: new Date()
+                    analyzedAt: new Date(),
+                    contractContent: approved ? contractText : null
                 },
                 {
                     headers: {
@@ -98,6 +129,40 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
             toast.error('Erro ao analisar proposta');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveContract = async () => {
+        if (!contractText) {
+            toast.warning('Por favor, preencha o contrato antes de salvar');
+            return;
+        }
+
+        setSavingContract(true);
+        try {
+            const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
+            
+            await axios.patch(
+                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
+                {
+                    contractContent: contractText,
+                    lastEditedBy: colaboratorData.user.id,
+                    lastEditedAt: new Date()
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${colaboratorData.token}`
+                    }
+                }
+            );
+
+            toast.success('Contrato salvo com sucesso!');
+            setEditingContract(false);
+        } catch (error) {
+            console.error('Erro ao salvar contrato:', error);
+            toast.error('Erro ao salvar o contrato');
+        } finally {
+            setSavingContract(false);
         }
     };
 
@@ -160,6 +225,25 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
         window.open(`https://web.whatsapp.com/send?phone=${formattedNumber}`, '_blank');
     };
 
+    // Configuração do editor Quill
+    const quillModules = {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['clean']
+        ],
+    };
+
+    const quillFormats = [
+        'header',
+        'bold', 'italic', 'underline', 'strike',
+        'list', 'bullet', 'indent',
+        'color', 'background'
+    ];
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -189,24 +273,58 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => handleAnalyze(false)}
-                                disabled={loading}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 
-                                    hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
-                            >
-                                <Cancel />
-                                Reprovar
-                            </button>
-                            <button
-                                onClick={() => handleAnalyze(true)}
-                                disabled={loading}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 
-                                    hover:bg-green-500/30 text-green-500 rounded-lg transition-colors"
-                            >
-                                <CheckCircle />
-                                Aprovar
-                            </button>
+                            {proposal.isTrueContract || proposal.contractStatus === 'aprovado' ? (
+                                <>
+                                    <div className="bg-green-500/20 px-4 py-2 rounded-lg text-green-500">
+                                        Esta proposta foi aprovada. Revise o contrato abaixo.
+                                    </div>
+                                    {editingContract ? (
+                                        <button
+                                            onClick={handleSaveContract}
+                                            disabled={savingContract}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 
+                                                hover:bg-blue-500/30 text-blue-500 rounded-lg transition-colors"
+                                        >
+                                            {savingContract ? (
+                                                <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+                                            ) : (
+                                                <Save />
+                                            )}
+                                            Salvar Contrato
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setEditingContract(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 
+                                                hover:bg-blue-500/30 text-blue-500 rounded-lg transition-colors"
+                                        >
+                                            <Edit />
+                                            Editar Contrato
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => handleAnalyze(false)}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-500/20 
+                                            hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
+                                    >
+                                        <Cancel />
+                                        Reprovar
+                                    </button>
+                                    <button
+                                        onClick={() => handleAnalyze(true)}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-500/20 
+                                            hover:bg-green-500/30 text-green-500 rounded-lg transition-colors"
+                                    >
+                                        <CheckCircle />
+                                        Aprovar
+                                    </button>
+                                </>
+                            )}
                             <button
                                 onClick={onClose}
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
@@ -219,6 +337,85 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
 
                 {/* Conteúdo Principal com Scroll */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
+                    {/* Seção do Contrato se aprovada */}
+                    {(proposal.isTrueContract || proposal.contractStatus === 'aprovado') && (
+                        <div className="bg-white/5 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-[#e67f00] mb-4 flex items-center gap-2 justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Description /> Contrato
+                                </div>
+                                {proposal.clientSignature ? (
+                                    <div className="px-3 py-1 bg-green-500/20 text-green-500 rounded-full flex items-center gap-1 text-sm">
+                                        <DoneAll />
+                                        Assinado pelo cliente
+                                    </div>
+                                ) : (
+                                    <div className="px-3 py-1 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center gap-1 text-sm">
+                                        Aguardando assinatura do cliente
+                                    </div>
+                                )}
+                            </h3>
+                            {editingContract ? (
+                                <div className="min-h-[500px]">
+                                    <ReactQuill 
+                                        theme="snow"
+                                        value={contractText}
+                                        onChange={setContractText}
+                                        modules={quillModules}
+                                        formats={quillFormats}
+                                        className="bg-white rounded-lg text-gray-800 h-full min-h-[450px]"
+                                    />
+                                </div>
+                            ) : (
+                                <div 
+                                    className="bg-white p-6 rounded-lg min-h-[450px] prose max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: contractText }}
+                                />
+                            )}
+                            
+                            {proposal.clientSignature && (
+                                <div className="mt-4 bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                                    <h4 className="text-green-500 text-sm font-medium mb-2">Detalhes da Assinatura Digital</h4>
+                                    <div className="text-gray-300 text-xs space-y-1">
+                                        {(() => {
+                                            try {
+                                                const signatureData = JSON.parse(proposal.clientSignature);
+                                                return (
+                                                    <>
+                                                        <p><strong>Cliente:</strong> {signatureData.clientName}</p>
+                                                        <p><strong>CPF:</strong> {signatureData.clientCPF}</p>
+                                                        <p><strong>Data:</strong> {new Date(signatureData.signatureDate).toLocaleString('pt-BR')}</p>
+                                                        <p><strong>IP:</strong> {signatureData.ipAddress}</p>
+                                                        
+                                                        {signatureData.geoLocation && typeof signatureData.geoLocation !== 'string' && (
+                                                            <>
+                                                                <p className="mt-2 text-green-500 font-medium">Localização da Assinatura:</p>
+                                                                <p><strong>Cidade:</strong> {signatureData.geoLocation.city}</p>
+                                                                <p><strong>Estado/Região:</strong> {signatureData.geoLocation.region}</p>
+                                                                <p><strong>País:</strong> {signatureData.geoLocation.country}</p>
+                                                                <p><strong>Coordenadas:</strong> {signatureData.geoLocation.coordinates?.latitude}, {signatureData.geoLocation.coordinates?.longitude}</p>
+                                                                <p><strong>Fuso Horário:</strong> {signatureData.geoLocation.timezone}</p>
+                                                                <p><strong>Provedor de Internet:</strong> {signatureData.geoLocation.isp}</p>
+                                                            </>
+                                                        )}
+                                                        
+                                                        <p className="mt-2 text-green-500 font-medium">Informações do Dispositivo:</p>
+                                                        <p><strong>Navegador/Sistema:</strong> {signatureData.userAgent?.split(')')[0].split('(')[1]}</p>
+                                                        <p><strong>Plataforma:</strong> {signatureData.browserInfo?.platform}</p>
+                                                        <p><strong>Idioma:</strong> {signatureData.browserInfo?.language}</p>
+                                                        <p><strong>Resolução de Tela:</strong> {signatureData.browserInfo?.screenResolution}</p>
+                                                    </>
+                                                );
+                                            } catch (error) {
+                                                return <p>Erro ao carregar detalhes da assinatura.</p>;
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Seção 1: Informações do Cliente e Responsável */}
                     <div className="grid grid-cols-2 gap-8">
                         {/* Cliente */}
@@ -390,7 +587,7 @@ function AnalyzeProposalModal({ isOpen, onClose, proposal, onSuccess, onMessageS
                         
                         {/* Lista de Observações */}
                         <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                            {proposal.observations?.map((obs, index) => (
+                            {observations.map((obs, index) => (
                                 <div key={index} className="bg-white/5 p-4 rounded-lg">
                                     <div className="flex items-start gap-3">
                                         {/* Avatar do usuário */}

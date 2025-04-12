@@ -1,31 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Close, Person, AccountBalance, Description, AttachMoney, Calculate, Send, History } from '@mui/icons-material';
+import { Close, Person, AccountBalance, Description, AttachMoney, Send, Article, DoneAll } from '@mui/icons-material';
 import axios from 'axios';
 import { toast } from '../../../Common/Toast/Toast';
 import io from 'socket.io-client';
+import SimulationCalculator from './SimulationCalculator';
 
 function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessageSent }) {
     const [proposal, setProposal] = useState(initialProposal);
-    const [saldoDevedorDisplay, setSaldoDevedorDisplay] = useState('');
-    const [valorTotalDisplay, setValorTotalDisplay] = useState('');
-    const [economiaTotalDisplay, setEconomiaTotalDisplay] = useState('');
-    const [simulationData, setSimulationData] = useState({
-        parcela: '',
-        taxa: '',
-        prazoRestante: ''
-    });
-    const [newSimulation, setNewSimulation] = useState({
-        margem: '',
-        novaTaxa: '',
-        novoPrazo: ''
-    });
-    const [resultBruto, setResultBruto] = useState('');
     const [observations, setObservations] = useState([]);
     const [newObservation, setNewObservation] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
-    const [showSimulations, setShowSimulations] = useState(false);
     const [socket, setSocket] = useState(null);
+    const [showContract, setShowContract] = useState(false);
 
     // Inicializar socket e entrar na sala quando o componente montar
     useEffect(() => {
@@ -82,14 +69,6 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
     // Atualiza o estado local quando a prop muda
     useEffect(() => {
         setProposal(initialProposal);
-        if (initialProposal) {
-            const parcelaAtual = (initialProposal.contractValue / initialProposal.contractInstallments).toFixed(2);
-            setSimulationData({
-                parcela: parcelaAtual,
-                taxa: initialProposal.contractInterestRate?.toString() || '',
-                prazoRestante: initialProposal.contractRemainingInstallments?.toString() || ''
-            });
-        }
         if (initialProposal?.observations) {
             const uniqueObservations = initialProposal.observations.filter(
                 (obs, index, self) => index === self.findIndex((o) => o.createdAt === obs.createdAt)
@@ -97,92 +76,6 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
             setObservations(uniqueObservations);
         }
     }, [initialProposal]);
-
-    // Calcula o resultado da simulação em tempo real quando simulationData muda
-    useEffect(() => {
-        const parcela = parseFloat(simulationData.parcela) || 0;
-        const taxa = parseFloat(simulationData.taxa) / 100 || 0;
-        const prazoRestante = parseInt(simulationData.prazoRestante) || 0;
-
-        if (parcela && taxa && prazoRestante) {
-            const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
-            const valorTotal = parcela * prazoRestante;
-            const economiaTotal = valorTotal - saldoDevedor;
-
-            setSaldoDevedorDisplay(saldoDevedor.toFixed(2));
-            setValorTotalDisplay(valorTotal.toFixed(2));
-            setEconomiaTotalDisplay(economiaTotal.toFixed(2));
-        } else {
-            setSaldoDevedorDisplay('');
-            setValorTotalDisplay('');
-            setEconomiaTotalDisplay('');
-        }
-    }, [simulationData]);
-
-    // Função para calcular o saldo devedor
-    const calcularSaldoDevedorVP = (parcela, taxa, prazoRestante) => {
-        if (!parcela || !taxa || !prazoRestante) return 0;
-        return parcela * ((1 - Math.pow(1 + taxa, -prazoRestante)) / taxa);
-    };
-
-    const calcContratoBruto = () => {
-        const parcelaBase = parseFloat(simulationData.parcela) || 0;
-        const margem = parseFloat(newSimulation.margem) || 0;
-        const novaTaxa = parseFloat(newSimulation.novaTaxa) / 100 || 0;
-        const novoPrazo = parseInt(newSimulation.novoPrazo) || 0;
-
-        const result = calcularSaldoDevedorVP(parcelaBase + margem, novaTaxa, novoPrazo);
-        
-        const currentSaldoDevedor = calcularSaldoDevedorVP(simulationData.parcela, (simulationData.taxa / 100), simulationData.prazoRestante)
-        const IOF = (result - currentSaldoDevedor) * (6.5 / 100)
-        
-        setResultBruto((result - currentSaldoDevedor) - IOF);
-    };
-
-    // Handle changes nos campos de simulação
-    const handleSimulationChange = (e) => {
-        const { name, value } = e.target;
-        setSimulationData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    // Handle changes nos campos de nova simulação
-    const handleNewSimulationChange = (e) => {
-        const { name, value } = e.target;
-        setNewSimulation((prev) => ({ ...prev, [name]: value }));
-    };
-
-    // Função para salvar a simulação
-    const handleSaveSimulation = async () => {
-        try {
-            const saldoDevedor = calcularSaldoDevedorVP(
-                parseFloat(simulationData.parcela),
-                parseFloat(simulationData.taxa) / 100,
-                parseInt(simulationData.prazoRestante)
-            );
-
-            const simulationResult = {
-                ...simulationData,
-                saldoDevedor,
-                date: new Date().toISOString()
-            };
-
-            const colaboratorData = JSON.parse(localStorage.getItem('colaboratorData'));
-            const updatedSimulations = [...(proposal.currentSimulations || []), simulationResult];
-
-            await axios.patch(
-                `${import.meta.env.VITE_API_URL}/proposal/update?proposalId=${proposal.id}`,
-                { currentSimulations: updatedSimulations },
-                { headers: { 'Authorization': `Bearer ${colaboratorData.token}` } }
-            );
-
-            setProposal((prev) => ({ ...prev, currentSimulations: updatedSimulations }));
-            toast.success('Simulação salva com sucesso!');
-            setSimulationData({ parcela: '', taxa: '', prazoRestante: '' });
-        } catch (error) {
-            console.error('Erro ao salvar simulação:', error);
-            toast.error('Erro ao salvar simulação');
-        }
-    };
 
     // Função para adicionar observação
     const handleAddObservation = async () => {
@@ -210,6 +103,11 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
         } finally {
             setSendingMessage(false);
         }
+    };
+
+    // Função para lidar com simulações salvas
+    const handleSimulationSaved = (updatedSimulations) => {
+        setProposal(prev => ({ ...prev, currentSimulations: updatedSimulations }));
     };
 
     // Formata o tempo relativo
@@ -243,10 +141,74 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">Detalhes da Proposta</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <Close />
-                    </button>
+                    <div className="flex items-center gap-4">
+                        {(proposal.isTrueContract || proposal.contractStatus === 'aprovado') && proposal.contractContent && (
+                            <button
+                                onClick={() => setShowContract(!showContract)}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 rounded-lg transition-colors"
+                            >
+                                <Article />
+                                {showContract ? 'Ocultar Contrato' : 'Ver Contrato'}
+                            </button>
+                        )}
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                            <Close />
+                        </button>
+                    </div>
                 </div>
+
+                {/* Exibição do Contrato quando o botão é clicado e existe contrato */}
+                {showContract && proposal.contractContent && (
+                    <div className="mb-6 bg-white/5 p-6 rounded-lg">
+                        <h3 className="text-lg font-semibold text-[#e67f00] mb-4 flex items-center gap-2 justify-between">
+                            <div className="flex items-center gap-2">
+                                <Description /> Contrato
+                            </div>
+                            {proposal.clientSignature ? (
+                                <div className="px-3 py-1 bg-green-500/20 text-green-500 rounded-full flex items-center gap-1 text-sm">
+                                    <DoneAll />
+                                    Assinado pelo cliente
+                                </div>
+                            ) : (
+                                <div className="px-3 py-1 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center gap-1 text-sm">
+                                    Aguardando assinatura do cliente
+                                </div>
+                            )}
+                        </h3>
+                        <div 
+                            className="bg-white p-6 rounded-lg prose max-w-none"
+                            dangerouslySetInnerHTML={{ __html: proposal.contractContent }}
+                        />
+                        
+                        {proposal.clientSignature && (
+                            <div className="mt-4 bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                                <h4 className="text-green-500 text-sm font-medium mb-2">Detalhes da Assinatura Digital</h4>
+                                <div className="text-gray-300 text-xs space-y-1">
+                                    {(() => {
+                                        try {
+                                            const signatureData = JSON.parse(proposal.clientSignature);
+                                            return (
+                                                <>
+                                                    <p><strong>Cliente:</strong> {signatureData.clientName}</p>
+                                                    <p><strong>CPF:</strong> {signatureData.clientCPF}</p>
+                                                    <p><strong>Data:</strong> {new Date(signatureData.signatureDate).toLocaleString('pt-BR')}</p>
+                                                    
+                                                    {signatureData.geoLocation && typeof signatureData.geoLocation !== 'string' && (
+                                                        <p><strong>Localização:</strong> {signatureData.geoLocation.city}, {signatureData.geoLocation.region} - {signatureData.geoLocation.country}</p>
+                                                    )}
+                                                    
+                                                    <p><strong>IP:</strong> {signatureData.ipAddress}</p>
+                                                </>
+                                            );
+                                        } catch (error) {
+                                            return <p>Erro ao carregar detalhes da assinatura.</p>;
+                                        }
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="flex gap-6 flex-1">
                     {/* Área 1: Informações da Proposta */}
@@ -260,11 +222,11 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <span className="text-gray-400 text-sm">Nome:</span>
-                                    <p className="text-white">{proposal.Client?.name}</p>
+                                    <p className="text-white">{proposal.client?.name}</p>
                                 </div>
                                 <div>
                                     <span className="text-gray-400 text-sm">CPF:</span>
-                                    <p className="text-white">{proposal.Client?.cpf}</p>
+                                    <p className="text-white">{proposal.client?.cpf}</p>
                                 </div>
                             </div>
                         </div>
@@ -356,223 +318,13 @@ function ProposalDetails({ isOpen, onClose, proposal: initialProposal, onMessage
                     </div>
 
                     {/* Área 2: Simulação */}
-                    <div className="w-1/2 space-y-6">
-                        <div className="bg-white/5 p-4 rounded-lg space-y-4">
-                            <div className="flex items-center gap-2 text-gray-400">
-                                <Calculate />
-                                <h3 className="text-lg font-medium">Simulação de Refinanciamento</h3>
-                            </div>
-
-                            {/* Área de Cálculo Sem IOF */}
-                            <div className="bg-white/5 p-4 rounded-lg space-y-4">
-                                <h4 className="text-sm font-medium text-gray-400">Cálculo de Saldo Devedor</h4>
-                                {/* Display do Resultado em Tempo Real */}
-                                {(saldoDevedorDisplay || valorTotalDisplay || economiaTotalDisplay) && (
-                                    <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
-                                        <div className="text-center">
-                                            <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
-                                            <span className="text-white font-medium">
-                                                {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
-                                                    style: 'currency',
-                                                    currency: 'BRL'
-                                                })}
-                                            </span>
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
-                                            <span className="text-green-400 font-medium">
-                                                {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
-                                                    style: 'currency',
-                                                    currency: 'BRL'
-                                                })}
-                                            </span>
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="text-xs text-gray-400 block mb-1">Economia</span>
-                                            <span className="text-yellow-400 font-medium">
-                                                {parseFloat(economiaTotalDisplay).toLocaleString('pt-BR', {
-                                                    style: 'currency',
-                                                    currency: 'BRL'
-                                                })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Valor da Parcela</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
-                                            <input
-                                                type="text"
-                                                name="parcela"
-                                                value={simulationData.parcela}
-                                                onChange={handleSimulationChange}
-                                                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                                placeholder="0,00"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (% a.m.)</label>
-                                        <input
-                                            type="text"
-                                            name="taxa"
-                                            value={simulationData.taxa}
-                                            onChange={handleSimulationChange}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                            placeholder="0,00"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm text-gray-400 block mb-1">Prazo Restante</label>
-                                        <input
-                                            type="number"
-                                            name="prazoRestante"
-                                            value={simulationData.prazoRestante}
-                                            onChange={handleSimulationChange}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                            placeholder="Número de parcelas"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Área de Cálculo Com IOF */}
-                            <div className="bg-white/5 p-4 rounded-lg space-y-4 mt-4">
-                                <h4 className="text-sm font-medium text-gray-400">Simulação com IOF</h4>
-                                <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-4">
-                                    <div className="text-center bg-red-700 p-3 rounded-lg">
-                                        <span className="text-xs text-gray-200 block mb-1">Valor com IOF</span>
-                                        <span className="text-white font-medium text-lg">
-                                            {resultBruto ? parseFloat(resultBruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm text-gray-400 block mb-1">Prazo Atual</label>
-                                            <input
-                                                type="number"
-                                                name="novoPrazo"
-                                                value={newSimulation.novoPrazo}
-                                                onChange={handleNewSimulationChange}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                                placeholder="Número inteiro"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-sm text-gray-400 block mb-1">Taxa de Juros (atual)</label>
-                                            <input
-                                                type="number"
-                                                name="novaTaxa"
-                                                value={newSimulation.novaTaxa}
-                                                onChange={handleNewSimulationChange}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                                placeholder="Porcentagem"
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="text-sm text-gray-400 block mb-1">Margem do Cliente</label>
-                                            <input
-                                                type="number"
-                                                name="margem"
-                                                value={newSimulation.margem}
-                                                onChange={handleNewSimulationChange}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-                                                placeholder="Contábil"
-                                            />
-                                        </div>
-                                    </div>
-                                    <button
-                                        className="w-full p-2 bg-white hover:bg-gray-100 text-zinc-600 rounded-lg transition-colors"
-                                        onClick={calcContratoBruto}
-                                    >
-                                        Calcular com IOF
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleSaveSimulation}
-                                disabled={!simulationData.parcela || !simulationData.taxa || !simulationData.prazoRestante}
-                                className="w-full px-4 py-2 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg transition-colors text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Simular e Salvar
-                            </button>
-                        </div>
+                    <div className="w-1/2">
+                        <SimulationCalculator 
+                            proposal={proposal} 
+                            onSimulationSaved={handleSimulationSaved} 
+                        />
                     </div>
                 </div>
-
-                {/* Botão Flutuante para Simulações Anteriores */}
-                <button
-                    onClick={() => setShowSimulations(true)}
-                    className="fixed right-8 bottom-8 p-4 bg-[#e67f00] hover:bg-[#ff8c00] rounded-full shadow-lg transition-colors text-white"
-                >
-                    <History />
-                </button>
-
-                {/* Aside de Simulações Anteriores */}
-                <AnimatePresence>
-                    {showSimulations && (
-                        <motion.div
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 20 }}
-                            className="fixed right-0 top-0 h-full w-96 bg-[#1f1f1f] shadow-xl overflow-y-auto"
-                        >
-                            <div className="p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-medium text-[#e67f00]">Simulações Anteriores</h3>
-                                    <button
-                                        onClick={() => setShowSimulations(false)}
-                                        className="text-gray-400 hover:text-white transition-colors"
-                                    >
-                                        <Close />
-                                    </button>
-                                </div>
-                                <div className="space-y-4">
-                                    {proposal.currentSimulations?.sort((a, b) => new Date(b.date) - new Date(a.date)).map((sim, index) => (
-                                        <div key={index} className="bg-white/5 p-4 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                                            <div className="grid grid-cols-2 gap-2 text-sm">
-                                                <div>
-                                                    <span className="text-gray-400">Parcela: </span>
-                                                    <span className="text-white">
-                                                        {parseFloat(sim.parcela).toLocaleString('pt-BR', {
-                                                            style: 'currency',
-                                                            currency: 'BRL'
-                                                        })}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-400">Saldo Devedor: </span>
-                                                    <span className="text-green-400">
-                                                        {parseFloat(sim.saldoDevedor).toLocaleString('pt-BR', {
-                                                            style: 'currency',
-                                                            currency: 'BRL'
-                                                        })}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-400">Taxa: </span>
-                                                    <span className="text-white">{sim.taxa}% a.m.</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-400">Prazo: </span>
-                                                    <span className="text-white">{sim.prazoRestante} meses</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-2">
-                                                {new Date(sim.date).toLocaleString('pt-BR')}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
                 {/* Seção de Observações/Chat */}
                 <div className="bg-white/5 rounded-lg p-6 mt-8">
