@@ -106,17 +106,47 @@ function SimulationCalculator({ proposal, onSimulationSaved }) {
     // Handle changes nos campos de simulação
     const handleSimulationChange = (e) => {
         const { name, value } = e.target;
-        setSimulationData((prev) => ({ ...prev, [name]: value }));
+        
+        // Se for o campo de taxa, normaliza o valor para usar ponto como separador decimal
+        if (name === 'taxa') {
+            // Substitui vírgula por ponto e remove caracteres não numéricos (exceto ponto)
+            const normalizedValue = value.replace(',', '.').replace(/[^\d.]/g, '');
+            
+            // Garante que só há um ponto decimal
+            const parts = normalizedValue.split('.');
+            const finalValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : normalizedValue;
+            
+            setSimulationData(prev => ({ ...prev, [name]: finalValue }));
+            return;
+        }
+
+        // Para outros campos, mantém o comportamento original
+        setSimulationData(prev => ({ ...prev, [name]: value }));
     };
 
     // Handle changes nos campos de nova simulação
     const handleNewSimulationChange = (e) => {
         const { name, value } = e.target;
-        // Para permitir valores zero, verificamos se o valor é válido antes de atualizar o estado
-        if (name === 'margem' && value !== '' && isNaN(parseFloat(value))) {
-            return; // Não atualiza se não for um número válido
+        
+        // Se for o campo de taxa, normaliza o valor para usar ponto como separador decimal
+        if (name === 'novaTaxa') {
+            // Substitui vírgula por ponto e remove caracteres não numéricos (exceto ponto)
+            const normalizedValue = value.replace(',', '.').replace(/[^\d.]/g, '');
+            
+            // Garante que só há um ponto decimal
+            const parts = normalizedValue.split('.');
+            const finalValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : normalizedValue;
+            
+            setNewSimulation(prev => ({ ...prev, [name]: finalValue }));
+            return;
         }
-        setNewSimulation((prev) => ({ ...prev, [name]: value }));
+
+        // Para o campo margem, mantém a validação existente
+        if (name === 'margem' && value !== '' && isNaN(parseFloat(value))) {
+            return;
+        }
+        
+        setNewSimulation(prev => ({ ...prev, [name]: value }));
     };
 
     // Função para salvar a simulação no servidor

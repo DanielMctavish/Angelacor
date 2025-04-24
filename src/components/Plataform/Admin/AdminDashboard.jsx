@@ -1,4 +1,4 @@
-import { Add, Search, Chat, Groups, AccountBalance, ExpandLess, ExpandMore, Assignment, Analytics } from '@mui/icons-material';
+import { Add, Search, Chat, Groups, AccountBalance, ExpandLess, ExpandMore, Assignment, Analytics, TableChart, Calculate } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -16,6 +16,7 @@ import logoAngelCor from "../../../medias/logos/angelcor_logo.png"
 import CreateProposalModal from './Proposals/CreateProposalModal';
 import ListProposalsModal from './Proposals/ListProposalsModal';
 import AdminChat from './AdminChat/AdminChat';
+import SimulatorModal from './Simulator/SimulatorModal';
 
 function AdminDashboard() {
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ function AdminDashboard() {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [allProposals, setAllProposals] = useState([]);
     const [isProposalsListExpanded, setIsProposalsListExpanded] = useState(true);
+    const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
     useEffect(() => {
         checkAuth();
@@ -63,14 +65,14 @@ function AdminDashboard() {
             ]);
 
             // Ordenar clientes pelo mais recente
-            const sortedClients = (clientsResponse.data || []).sort((a, b) => 
+            const sortedClients = (clientsResponse.data || []).sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
 
             setUser(adminData.user);
             setClients(sortedClients);
             setBanks(banksResponse.data || []);
-            
+
             // Extrair todas as propostas de todos os clientes
             const proposals = sortedClients.reduce((acc, client) => {
                 if (client.proposals && client.proposals.length > 0) {
@@ -87,12 +89,12 @@ function AdminDashboard() {
                 }
                 return acc;
             }, []);
-            
+
             // Ordenar propostas pela data mais recente
-            const sortedProposals = proposals.sort((a, b) => 
+            const sortedProposals = proposals.sort((a, b) =>
                 new Date(b.proposalDate) - new Date(a.proposalDate)
             );
-            
+
             setAllProposals(sortedProposals);
             setLoading(false);
 
@@ -219,53 +221,138 @@ function AdminDashboard() {
                     transition={{ delay: 0.3 }}
                     className="flex flex-col gap-4"
                 >
-                    <div className="flex flex-col md:flex-row gap-4 w-full">
-                        <button
+
+
+                    {/* ---------------- menu de botões de ações ---------------- */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 
-                            bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
-                            rounded-lg transition-all text-base"
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-[#e67f00]/20 border border-white/5 hover:border-[#e67f00]/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
                         >
-                            <Add />
-                            Criar Novo Cliente
-                        </button>
-                        <button
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-[#e67f00]/20 rounded-lg group-hover:bg-[#e67f00]/30 
+                                transition-colors duration-300">
+                                <Add className="text-[#e67f00]" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Novo Cliente</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setIsCreateBankModalOpen(true)}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 
-                            bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
-                            rounded-lg transition-all text-base"
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-blue-500/20 border border-white/5 hover:border-blue-500/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
                         >
-                            <Add />
-                            Criar Novo Banco
-                        </button>
-                        <button
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 
+                                transition-colors duration-300">
+                                <Add className="text-blue-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Novo Banco</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => navigate('/plataforma/colaboradores')}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 
-                            bg-[#1f1f1f] hover:bg-[#e67f00] px-4 py-3 md:py-2 
-                            rounded-lg transition-all text-base"
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-purple-500/20 border border-white/5 hover:border-purple-500/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
                         >
-                            <Groups />
-                            Area de Colaboradores
-                        </button>
-                        <button
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 
+                                transition-colors duration-300">
+                                <Groups className="text-purple-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Colaboradores</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={toggleChat}
-                            className={`w-full md:w-auto flex items-center justify-center gap-2 
-                            ${isChatOpen ? 'bg-[#e67f00]' : 'bg-[#1f1f1f] hover:bg-[#e67f00]'} px-4 py-3 md:py-2 
-                            rounded-lg transition-all text-base`}
+                            className={`group relative flex flex-col items-center justify-center gap-2 
+                            ${isChatOpen 
+                                ? 'bg-green-500/20 border-green-500/30' 
+                                : 'bg-white/5 hover:bg-green-500/20 border-white/5 hover:border-green-500/30'} 
+                            border px-4 py-4 rounded-xl transition-all duration-300`}
                         >
-                            <Chat />
-                            Observações
-                        </button>
-                        <button
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className={`p-2 ${isChatOpen ? 'bg-green-500/30' : 'bg-green-500/20'} rounded-lg 
+                                group-hover:bg-green-500/30 transition-colors duration-300`}>
+                                <Chat className="text-green-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Observações</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => navigate('/plataforma/analytics')}
-                            className={`w-full md:w-auto flex items-center justify-center gap-2 
-                            ${isChatOpen ? 'bg-[#e67f00]' : 'bg-[#1f1f1f] hover:bg-[#e67f00]'} px-4 py-3 md:py-2 
-                            rounded-lg transition-all text-base`}
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-indigo-500/20 border border-white/5 hover:border-indigo-500/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
                         >
-                            <Analytics />
-                            Métricas
-                        </button>
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 
+                                transition-colors duration-300">
+                                <Analytics className="text-indigo-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Métricas</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-pink-500/20 border border-white/5 hover:border-pink-500/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/30 
+                                transition-colors duration-300">
+                                <TableChart className="text-pink-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Tabelas</span>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setIsSimulatorOpen(true)}
+                            className="group relative flex flex-col items-center justify-center gap-2 
+                            bg-white/5 hover:bg-amber-500/20 border border-white/5 hover:border-amber-500/30
+                            px-4 py-4 rounded-xl transition-all duration-300"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-xl opacity-0 
+                                group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="p-2 bg-amber-500/20 rounded-lg group-hover:bg-amber-500/30 
+                                transition-colors duration-300">
+                                <Calculate className="text-amber-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white/90 group-hover:text-white 
+                                transition-colors duration-300">Simulador</span>
+                        </motion.button>
                     </div>
+                    {/* --------------------------------- fim do menu de botões de ações ---------------- */}
 
                     <div className="w-full flex items-center gap-2 bg-white/5 
                         border border-white/10 rounded-lg px-3 py-3 md:py-2">
@@ -374,7 +461,7 @@ function AdminDashboard() {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => {/* Função para visualizar proposta */}}
+                                                    onClick={() => {/* Função para visualizar proposta */ }}
                                                     className="px-3 py-1 bg-[#e67f00] hover:bg-[#ff8c00] rounded-lg text-sm transition-colors"
                                                 >
                                                     Visualizar
@@ -516,6 +603,18 @@ function AdminDashboard() {
                     onConfirm={handleConfirmDelete}
                     clientName={deleteModal.client?.name}
                 />
+                {isSimulatorOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <SimulatorModal
+                            isOpen={isSimulatorOpen}
+                            onClose={() => setIsSimulatorOpen(false)}
+                        />
+                    </motion.div>
+                )}
             </AnimatePresence>
         </div>
     );

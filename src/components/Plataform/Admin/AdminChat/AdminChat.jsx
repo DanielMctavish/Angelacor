@@ -63,9 +63,9 @@ function AdminChat({ isOpen, onClose, proposals = [] }) {
 
     // Inicializar o socket quando o componente montar ou quando o painel for aberto
     useEffect(() => {
-
-        console.log("observando propostas -> ", proposals[0].client)
-        if (isOpen) {
+        if (isOpen && proposals && proposals.length > 0) {
+            console.log("observando propostas -> ", proposals[0].client);
+            
             // Obter dados do admin
             const adminData = JSON.parse(localStorage.getItem('adminToken') || '{}');
             if (adminData && adminData.user && adminData.user.id) {
@@ -88,7 +88,7 @@ function AdminChat({ isOpen, onClose, proposals = [] }) {
                 newSocket.disconnect();
             };
         }
-    }, [isOpen]);
+    }, [isOpen, proposals]);
 
     // Função para adicionar observações sem duplicação
     const addObservationsWithoutDuplicates = (newObservations) => {
@@ -573,7 +573,7 @@ function AdminChat({ isOpen, onClose, proposals = [] }) {
 
                             {/* Proposal List */}
                             <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#131620] to-[#15192a]">
-                                {filteredProposals.length === 0 ? (
+                                {!filteredProposals || filteredProposals.length === 0 ? (
                                     <div className="p-8 text-center text-gray-400">
                                         <Search className="text-gray-500 mx-auto mb-2 text-3xl" />
                                         Nenhuma proposta encontrada
@@ -585,7 +585,7 @@ function AdminChat({ isOpen, onClose, proposals = [] }) {
                                         
                                         return (
                                             <div
-                                                key={proposal.id}
+                                                key={proposal.id || proposal._id}
                                                 onClick={() => setSelectedProposal(proposal)}
                                                 className="p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
                                             >
