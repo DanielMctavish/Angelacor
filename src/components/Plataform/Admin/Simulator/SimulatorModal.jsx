@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Close, Calculate, Delete, LightMode, DarkMode } from '@mui/icons-material';
+import { calcularSaldoDevedorVP } from './usecases/calcularSaldoDevedorVP';
+import { calcContratoBruto } from './usecases/calcContratoBruto';
 
 function SimulatorModal({ isOpen, onClose }) {
     const [saldoDevedorDisplay, setSaldoDevedorDisplay] = useState('');
     const [valorTotalDisplay, setValorTotalDisplay] = useState('');
-    const [economiaTotalDisplay, setEconomiaTotalDisplay] = useState('');
     const [savedSimulations, setSavedSimulations] = useState([]);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [showInstructions, setShowInstructions] = useState(true);
@@ -17,7 +18,8 @@ function SimulatorModal({ isOpen, onClose }) {
     const [newSimulation, setNewSimulation] = useState({
         margem: '',
         novaTaxa: '',
-        novoPrazo: ''
+        novoPrazo: '',
+        taxaIOF: '6.5'
     });
     const [resultBruto, setResultBruto] = useState('');
 
@@ -30,57 +32,27 @@ function SimulatorModal({ isOpen, onClose }) {
         if (parcela && taxa && prazoRestante) {
             const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
             const valorTotal = parcela * prazoRestante;
-            const economiaTotal = valorTotal - saldoDevedor;
 
             setSaldoDevedorDisplay(saldoDevedor.toFixed(2));
             setValorTotalDisplay(valorTotal.toFixed(2));
-            setEconomiaTotalDisplay(economiaTotal.toFixed(2));
         } else {
             setSaldoDevedorDisplay('');
             setValorTotalDisplay('');
-            setEconomiaTotalDisplay('');
         }
     }, [simulationData]);
 
-    // Função para calcular o saldo devedor
-    const calcularSaldoDevedorVP = (parcela, taxa, prazoRestante) => {
-        if (!parcela || !taxa || !prazoRestante) return 0;
-        return parcela * ((1 - Math.pow(1 + taxa, -prazoRestante)) / taxa);
-    };
-
-    // Função dedicada para calcular valor com IOF
-    const calcularValorComIOF = (parcelaBase, margem, novaTaxa, novoPrazo, saldoDevedorAtual) => {
-        if (!margem || !novaTaxa || !novoPrazo) return 0;
-        
-        // Se não tiver saldo devedor atual, considera 0
-        const saldoDevedorBase = saldoDevedorAtual || 0;
-        
-        // Calcula o novo saldo devedor apenas com a margem
-        const novoSaldoDevedor = calcularSaldoDevedorVP(margem, novaTaxa / 100, novoPrazo);
-        const diferenca = novoSaldoDevedor - saldoDevedorBase;
-        const valorIOF = diferenca * (6.5 / 100);
-
-        return diferenca - valorIOF;
-    };
-
     // Calcula o valor do contrato bruto com IOF
-    const calcContratoBruto = () => {
-        const margem = parseFloat(newSimulation.margem) || 0;
-        const novaTaxa = parseFloat(newSimulation.novaTaxa) || 0;
-        const novoPrazo = parseInt(newSimulation.novoPrazo) || 0;
+    const handleCalcContratoBruto = () => {
+        const valorBruto = calcContratoBruto({
+            margem: newSimulation.margem,
+            novaTaxa: newSimulation.novaTaxa,
+            novoPrazo: newSimulation.novoPrazo,
+            saldoDevedorAtual: saldoDevedorDisplay || '0',
+            parcelaBase: simulationData.parcela || '0',
+            taxaIOF: newSimulation.taxaIOF
+        });
 
-        // Usa o saldo devedor calculado se disponível, senão usa 0
-        const saldoDevedorAtual = saldoDevedorDisplay ? parseFloat(saldoDevedorDisplay) : 0;
-
-        const valorIof = calcularValorComIOF(
-            0, // parcela base não é mais necessária
-            margem,
-            novaTaxa,
-            novoPrazo,
-            saldoDevedorAtual
-        );
-
-        setResultBruto(valorIof.toFixed(2));
+        setResultBruto(valorBruto.toFixed(2));
     };
 
     // Handle changes nos campos de simulação
@@ -133,7 +105,7 @@ function SimulatorModal({ isOpen, onClose }) {
     const saveSimulation = (type) => {
         const baseSimulation = {
             id: Date.now(),
-            type: type, // 'basic' ou 'iof' ou 'complete'
+            type: type,
             timestamp: new Date().toISOString(),
         };
 
@@ -143,8 +115,7 @@ function SimulatorModal({ isOpen, onClose }) {
                 taxa: simulationData.taxa,
                 prazoRestante: simulationData.prazoRestante,
                 saldoDevedor: saldoDevedorDisplay,
-                valorTotal: valorTotalDisplay,
-                economiaTotal: economiaTotalDisplay
+                valorTotal: valorTotalDisplay
             };
         }
 
@@ -276,8 +247,8 @@ function SimulatorModal({ isOpen, onClose }) {
                             </div>
 
                             {/* Display do Resultado em Tempo Real */}
-                            {(saldoDevedorDisplay || valorTotalDisplay || economiaTotalDisplay) && (
-                                <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-lg">
+                            {(saldoDevedorDisplay || valorTotalDisplay) && (
+                                <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg">
                                     <div className="text-center">
                                         <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
                                         <span className="text-white font-medium">
@@ -291,15 +262,6 @@ function SimulatorModal({ isOpen, onClose }) {
                                         <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
                                         <span className="text-green-400 font-medium">
                                             {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
-                                                style: 'currency',
-                                                currency: 'BRL'
-                                            })}
-                                        </span>
-                                    </div>
-                                    <div className="text-center">
-                                        <span className="text-xs text-gray-400 block mb-1">Economia</span>
-                                        <span className="text-yellow-400 font-medium">
-                                            {parseFloat(economiaTotalDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
                                             })}
@@ -366,8 +328,8 @@ function SimulatorModal({ isOpen, onClose }) {
                                 </button>
                             </div>
 
-                            <div className={`text-xs ${descriptionClass} italic mb-2`}>
-                                <p>O IOF é calculado sobre a diferença entre o novo contrato e o saldo devedor atual, aplicando uma taxa de 6,5%.</p>
+                            <div className="text-xs text-gray-400 italic mb-2">
+                                <p>O IOF é calculado sobre a diferença entre o novo contrato e o saldo devedor atual.</p>
                             </div>
 
                             <div className={`${isDarkMode ? "bg-[#1a1a1a]" : "bg-white"} p-4 rounded-lg space-y-4`}>
@@ -415,7 +377,7 @@ function SimulatorModal({ isOpen, onClose }) {
                                             placeholder="Porcentagem"
                                         />
                                     </div>
-                                    <div className="col-span-2">
+                                    <div>
                                         <label className={`text-sm ${labelClass} block mb-1`}>
                                             Margem Disponível
                                         </label>
@@ -432,6 +394,24 @@ function SimulatorModal({ isOpen, onClose }) {
                                             placeholder="Valor disponível"
                                         />
                                     </div>
+                                    <div>
+                                        <label className={`text-sm ${labelClass} block mb-1`}>
+                                            Taxa IOF (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="taxaIOF"
+                                            value={newSimulation.taxaIOF}
+                                            onChange={handleNewSimulationChange}
+                                            className={`w-full px-4 py-2 rounded-lg border transition-colors ${
+                                                isDarkMode 
+                                                    ? "bg-white/5 border-white/10 text-white" 
+                                                    : "bg-white border-gray-200 text-gray-800"
+                                            }`}
+                                            placeholder="Ex: 6.5"
+                                            step="0.1"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-2">
@@ -441,7 +421,7 @@ function SimulatorModal({ isOpen, onClose }) {
                                                 ? "bg-white hover:bg-gray-100 text-zinc-600" 
                                                 : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                                         }`}
-                                        onClick={calcContratoBruto}
+                                        onClick={handleCalcContratoBruto}
                                     >
                                         Calcular com IOF
                                     </button>
