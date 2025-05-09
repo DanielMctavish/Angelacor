@@ -7,7 +7,6 @@ import AdminNavbar from './Navigation/AdminNavbar';
 import CreateClientModal from './Clients/CreateClientModal';
 import ClientDetailsModal from './Clients/ClientDetailsModal';
 import CreateBankModal from './Banks/CreateBankModal';
-import { Person as PersonIcon } from '@mui/icons-material';
 import { toast } from '@components/Common/Toast/Toast';
 import DeleteClientModal from './Clients/DeleteClientModal';
 import ClientsListAdmin from './Clients/ClientsListAdmin';
