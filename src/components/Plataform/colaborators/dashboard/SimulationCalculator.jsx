@@ -8,6 +8,7 @@ function SimulationCalculator({ proposal, onSimulationSaved }) {
     const [saldoDevedorDisplay, setSaldoDevedorDisplay] = useState('');
     const [valorTotalDisplay, setValorTotalDisplay] = useState('');
     const [economiaTotalDisplay, setEconomiaTotalDisplay] = useState('');
+    const [seguroValue, setSeguroValue] = useState('');
     const [simulationData, setSimulationData] = useState({
         parcela: '',
         taxa: '',
@@ -107,6 +108,19 @@ function SimulationCalculator({ proposal, onSimulationSaved }) {
     const handleSimulationChange = (e) => {
         const { name, value } = e.target;
         
+        // Se for o campo de seguro, valida se é um número válido
+        if (name === 'seguro') {
+            // Remove caracteres não numéricos (exceto ponto)
+            const normalizedValue = value.replace(/[^\d.]/g, '');
+            
+            // Garante que só há um ponto decimal
+            const parts = normalizedValue.split('.');
+            const finalValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : normalizedValue;
+            
+            setSeguroValue(finalValue);
+            return;
+        }
+
         // Se for o campo de taxa, normaliza o valor para usar ponto como separador decimal
         if (name === 'taxa') {
             // Substitui vírgula por ponto e remove caracteres não numéricos (exceto ponto)
@@ -265,7 +279,7 @@ function SimulationCalculator({ proposal, onSimulationSaved }) {
                             <div className="text-center">
                                 <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
                                 <span className="text-white font-medium">
-                                    {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
+                                    {parseFloat(valorTotalDisplay - (parseFloat(seguroValue) || 0)).toLocaleString('pt-BR', {
                                         style: 'currency',
                                         currency: 'BRL'
                                     })}
@@ -386,6 +400,28 @@ function SimulationCalculator({ proposal, onSimulationSaved }) {
                         >
                             Calcular com IOF
                         </button>
+                    </div>
+                </div>
+
+                {/* Campo de Seguro */}
+                <div className="bg-white/5 p-4 rounded-lg space-y-4 mt-4">
+                    <h4 className="text-sm font-medium text-gray-400">Valor do Seguro</h4>
+                    <div className="text-xs text-gray-400 italic mb-2">
+                        <p>O valor do seguro será deduzido do valor total da simulação.</p>
+                    </div>
+                    <div>
+                        <label className="text-sm text-gray-400 block mb-1">Valor do Seguro</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
+                            <input
+                                type="text"
+                                name="seguro"
+                                value={seguroValue}
+                                onChange={handleSimulationChange}
+                                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                                placeholder="0,00"
+                            />
+                        </div>
                     </div>
                 </div>
 

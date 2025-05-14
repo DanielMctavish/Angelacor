@@ -10,6 +10,7 @@ function SimulatorModal({ isOpen, onClose }) {
     const [savedSimulations, setSavedSimulations] = useState([]);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [showInstructions, setShowInstructions] = useState(true);
+    const [seguroValue, setSeguroValue] = useState('');
     const [simulationData, setSimulationData] = useState({
         parcela: '',
         taxa: '',
@@ -28,18 +29,22 @@ function SimulatorModal({ isOpen, onClose }) {
         const parcela = parseFloat(simulationData.parcela) || 0;
         const taxa = parseFloat(simulationData.taxa) / 100 || 0;
         const prazoRestante = parseInt(simulationData.prazoRestante) || 0;
+        const seguro = parseFloat(seguroValue) || 0;
 
         if (parcela && taxa && prazoRestante) {
-            const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
             const valorTotal = parcela * prazoRestante;
+            const saldoDevedor = calcularSaldoDevedorVP(parcela, taxa, prazoRestante);
+            
+            // Subtrai o seguro proporcionalmente do saldo devedor
+            const saldoDevedorComSeguro = saldoDevedor - seguro;
 
-            setSaldoDevedorDisplay(saldoDevedor.toFixed(2));
-            setValorTotalDisplay(valorTotal.toFixed(2));
+            setSaldoDevedorDisplay(saldoDevedorComSeguro.toFixed(2));
+            setValorTotalDisplay((valorTotal - seguro).toFixed(2));
         } else {
             setSaldoDevedorDisplay('');
             setValorTotalDisplay('');
         }
-    }, [simulationData]);
+    }, [simulationData, seguroValue]);
 
     // Calcula o valor do contrato bruto com IOF
     const handleCalcContratoBruto = () => {
@@ -58,6 +63,19 @@ function SimulatorModal({ isOpen, onClose }) {
     // Handle changes nos campos de simulação
     const handleSimulationChange = (e) => {
         const { name, value } = e.target;
+
+        // Se for o campo de seguro, valida se é um número válido
+        if (name === 'seguro') {
+            // Remove caracteres não numéricos (exceto ponto)
+            const normalizedValue = value.replace(/[^\d.]/g, '');
+            
+            // Garante que só há um ponto decimal
+            const parts = normalizedValue.split('.');
+            const finalValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : normalizedValue;
+            
+            setSeguroValue(finalValue);
+            return;
+        }
 
         // Se for o campo de taxa, normaliza o valor para usar ponto como separador decimal
         if (name === 'taxa') {
@@ -115,7 +133,8 @@ function SimulatorModal({ isOpen, onClose }) {
                 taxa: simulationData.taxa,
                 prazoRestante: simulationData.prazoRestante,
                 saldoDevedor: saldoDevedorDisplay,
-                valorTotal: valorTotalDisplay
+                valorTotal: valorTotalDisplay,
+                seguro: seguroValue || '0'
             };
         }
 
@@ -251,7 +270,7 @@ function SimulatorModal({ isOpen, onClose }) {
                                 <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg">
                                     <div className="text-center">
                                         <span className="text-xs text-gray-400 block mb-1">Valor Total</span>
-                                        <span className="text-white font-medium">
+                                        <span className={`font-medium ${valueClass}`}>
                                             {parseFloat(valorTotalDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
@@ -260,7 +279,7 @@ function SimulatorModal({ isOpen, onClose }) {
                                     </div>
                                     <div className="text-center">
                                         <span className="text-xs text-gray-400 block mb-1">Saldo Devedor</span>
-                                        <span className="text-green-400 font-medium">
+                                        <span className={`font-medium ${isDarkMode ? "text-green-400" : "text-green-600"}`}>
                                             {parseFloat(saldoDevedorDisplay).toLocaleString('pt-BR', {
                                                 style: 'currency',
                                                 currency: 'BRL'
@@ -305,6 +324,36 @@ function SimulatorModal({ isOpen, onClose }) {
                                         onChange={handleSimulationChange}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
                                         placeholder="Número de parcelas"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Campo de Seguro */}
+                        <div className={`${cardBaseClass} border p-4 rounded-lg space-y-4`}>
+                            <div className="flex items-center justify-between">
+                                <h4 className={`text-sm font-medium ${labelClass}`}>
+                                    Valor do Seguro
+                                </h4>
+                            </div>
+                            <div className="text-xs text-gray-400 italic mb-2">
+                                <p>O valor do seguro será deduzido do valor total da simulação.</p>
+                            </div>
+                            <div>
+                                <label className={`text-sm ${labelClass} block mb-1`}>Valor do Seguro</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
+                                    <input
+                                        type="text"
+                                        name="seguro"
+                                        value={seguroValue}
+                                        onChange={handleSimulationChange}
+                                        className={`w-full pl-10 pr-4 py-2 rounded-lg border transition-colors ${
+                                            isDarkMode 
+                                                ? "bg-white/5 border-white/10 text-white" 
+                                                : "bg-white border-gray-200 text-gray-800"
+                                        }`}
+                                        placeholder="0,00"
                                     />
                                 </div>
                             </div>
@@ -516,6 +565,19 @@ function SimulatorModal({ isOpen, onClose }) {
                                                         })}
                                                     </p>
                                                 </div>
+                                                {sim.basicData.seguro && Number(sim.basicData.seguro) > 0 && (
+                                                    <div>
+                                                        <span className={`text-xs ${labelClass} block`}>
+                                                            Seguro
+                                                        </span>
+                                                        <p className={`font-medium ${isDarkMode ? "text-amber-400" : "text-amber-600"}`}>
+                                                            {Number(sim.basicData.seguro).toLocaleString('pt-BR', {
+                                                                style: 'currency',
+                                                                currency: 'BRL'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
